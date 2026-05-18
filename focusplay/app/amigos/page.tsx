@@ -1,17 +1,82 @@
 "use client"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { getProfile, addGems, recordActivity } from "@/lib/store"
+import { getProfile, addGems, recordActivity, saveProfile } from "@/lib/store"
 import { SCENARIOS, type Scenario, type Option } from "@/lib/scenarios"
 
-type Phase = "question" | "feedback" | "reward"
+type Phase = "setup" | "question" | "feedback" | "reward"
+
+// Componente de Avatar 100% código, sin imágenes externas
+const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, skinTone: string, bgColor: string, size?: number }) => {
+  const skinMap: Record<string, string> = { 
+    lightest: "#FFDFC4", 
+    light: "#F0D5BE", 
+    medium: "#D2996C", 
+    dark: "#8D5524", 
+    darkest: "#3D2210" 
+  }
+  const skin = skinMap[skinTone] || skinMap.medium
+
+  // Aseguramos compatibilidad con perfiles guardados anteriormente
+  let safeBase = base
+  if (base === "boy") safeBase = "boy_short"
+  if (base === "girl") safeBase = "girl_long"
+  if (base === "neutral") safeBase = "boy_curly"
+  if (base === "spiky") safeBase = "boy_spiky"
+  if (base === "bun") safeBase = "girl_bun"
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Fondo circular */}
+      <circle cx="50" cy="50" r="50" fill={bgColor} />
+      
+      {/* Pelo trasero (Niñas) */}
+      {safeBase === "girl_long" && <path d="M 25 40 Q 15 80 30 90 Q 50 100 70 90 Q 85 80 75 40 Z" fill="#2B221E" />}
+      {safeBase === "girl_bun" && <circle cx="50" cy="18" r="14" fill="#2B221E" />}
+      {safeBase === "girl_ponytail" && <path d="M 65 35 Q 95 40 85 80 Q 75 60 70 45 Z" fill="#2B221E" />}
+      {safeBase === "girl_bob" && <path d="M 15 45 L 15 70 Q 50 80 85 70 L 85 45 Z" fill="#2B221E" />}
+      {safeBase === "girl_braids" && (
+        <>
+          <path d="M 25 45 Q 10 70 20 95 Q 30 70 35 45 Z" fill="#2B221E" />
+          <path d="M 75 45 Q 90 70 80 95 Q 70 70 65 45 Z" fill="#2B221E" />
+        </>
+      )}
+      
+      {/* Cuello y camisa */}
+      <path d="M 35 75 L 35 100 L 65 100 L 65 75 Z" fill={skin} />
+      <path d="M 20 100 Q 50 80 80 100 Z" fill="#ffffff" opacity="0.8" />
+      
+      {/* Cara */}
+      <circle cx="50" cy="50" r="28" fill={skin} />
+      
+      {/* Pelo frontal Niños */}
+      {safeBase === "boy_short" && <path d="M 18 45 Q 50 10 82 45 Q 60 25 50 30 Q 30 25 18 45 Z" fill="#2B221E" />}
+      {safeBase === "boy_spiky" && <path d="M 18 45 L 25 18 L 38 30 L 50 12 L 62 30 L 75 18 L 82 45 Q 50 30 18 45 Z" fill="#2B221E" />}
+      {safeBase === "boy_curly" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill="#2B221E" />}
+      {safeBase === "boy_messy" && <path d="M 18 45 Q 25 20 40 25 Q 50 15 65 30 Q 80 20 82 45 Q 50 30 18 45 Z" fill="#2B221E" />}
+      {safeBase === "boy_part" && <path d="M 18 45 Q 40 15 82 45 Q 65 20 40 25 Q 25 20 18 45 Z" fill="#2B221E" />}
+      
+      {/* Pelo frontal Niñas */}
+      {(safeBase === "girl_long" || safeBase === "girl_ponytail" || safeBase === "girl_bob" || safeBase === "girl_braids") && (
+        <path d="M 22 50 Q 50 15 78 50 Q 65 30 50 35 Q 35 30 22 50 Z" fill="#2B221E" />
+      )}
+      {safeBase === "girl_bun" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill="#2B221E" />}
+      
+      {/* Ojos y Sonrisa */}
+      <circle cx="40" cy="52" r="3.5" fill="#1C2B3A" />
+      <circle cx="60" cy="52" r="3.5" fill="#1C2B3A" />
+      <path d="M 42 62 Q 50 70 58 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />
+    </svg>
+  )
+}
 
 export default function Amigos() {
+  const [isMounted, setIsMounted] = useState(false)
   const profile  = getProfile()
   const [gems, setGems]           = useState(profile.gems)
   const [scenarioIndex, setScenarioIndex] = useState(0)
   const [selected, setSelected]   = useState<Option | null>(null)
-  const [phase, setPhase]         = useState<Phase>("question")
+  const [phase, setPhase]         = useState<Phase>("setup")
   const [score, setScore]         = useState(0)
   const [aiFeedback, setAiFeedback] = useState("")
   const [loadingAI, setLoadingAI] = useState(false)
@@ -20,9 +85,64 @@ export default function Amigos() {
   const scenario: Scenario = SCENARIOS[scenarioIndex % SCENARIOS.length]
   const total = SCENARIOS.length
 
+  // Estados para la configuración del Avatar
+  const getSafeBase = (b: string) => {
+    if (b === "boy") return "boy_short"
+    if (b === "girl") return "girl_long"
+    if (b === "neutral") return "boy_curly"
+    if (b === "spiky") return "boy_spiky"
+    if (b === "bun") return "girl_bun"
+    return b
+  }
+
+  const initialBase = getSafeBase(profile.avatar.base)
+  const initialGender = ["girl_long", "girl_bun", "girl_ponytail", "girl_bob", "girl_braids"].includes(initialBase) ? "girl" : "boy"
+
+  const [setupGender, setSetupGender] = useState<"boy" | "girl">(initialGender)
+  const [setupBase, setSetupBase] = useState(initialBase)
+  const [setupTone, setSetupTone] = useState(profile.avatar.skinTone)
+  const [setupColor, setSetupColor] = useState(profile.avatar.color)
+
+  const avatarColors = [
+    "#4ECDC4", "#FF6B6B", "#FFE66D", "#9D4EDD", "#45B7D1",
+    "#96CEB4", "#D4A5A5", "#FF9F1C", "#A8E6CF", "#8338EC"
+  ] 
+
+  const boyHairs = [
+    { id: "boy_short", label: "Corto" },
+    { id: "boy_spiky", label: "Picos" },
+    { id: "boy_curly", label: "Rizo" },
+    { id: "boy_messy", label: "Despeinado" },
+    { id: "boy_part", label: "De lado" },
+  ]
+  const girlHairs = [
+    { id: "girl_long", label: "Largo" },
+    { id: "girl_bun", label: "Chongo" },
+    { id: "girl_ponytail", label: "Coleta" },
+    { id: "girl_bob", label: "Corto" },
+    { id: "girl_braids", label: "Trenzas" },
+  ]
+  const activeHairs = setupGender === "boy" ? boyHairs : girlHairs
+
+  const handleGenderSelect = (g: "boy" | "girl") => {
+    setSetupGender(g)
+    if (g === "boy" && !boyHairs.find(h => h.id === setupBase)) setSetupBase("boy_short")
+    if (g === "girl" && !girlHairs.find(h => h.id === setupBase)) setSetupBase("girl_long")
+  }
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   useEffect(() => {
     setFlipStart(Date.now())
   }, [scenarioIndex])
+
+  const startPlay = () => {
+    saveProfile({ ...profile, avatar: { base: setupBase, skinTone: setupTone, color: setupColor } })
+    setFlipStart(Date.now())
+    setPhase("question")
+  }
 
   const handleSelect = async (option: Option) => {
     if (phase !== "question") return
@@ -80,6 +200,8 @@ export default function Amigos() {
     setAiFeedback("")
   }
 
+  if (!isMounted) return null
+
   return (
     <main style={S.main}>
       <header style={S.header}>
@@ -91,11 +213,74 @@ export default function Amigos() {
           <span style={{ color: "var(--teal)" }}>◆</span>
           <span style={S.gemsNum}>{gems}</span>
         </div>
+        {(phase !== "setup") && (
+          <div style={S.userAvatarContainer}>
+            <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={36} />
+          </div>
+        )}
       </header>
       <div style={S.tealLine} />
 
+      {phase === "setup" && (
+        <div style={S.setupBody} className="anim-fadein">
+          <h2 style={S.setupTitle}>¡Crea tu personaje!</h2>
+          <p style={S.setupSub}>Así te verás en el juego hoy</p>
+          
+          <div style={S.previewBox}>
+            <CustomAvatar base={setupBase} skinTone={setupTone} bgColor={setupColor} size={140} />
+          </div>
+
+          <div style={S.setupControls}>
+            <div style={S.setupSection}>
+              <p style={S.setupLabel}>GÉNERO</p>
+              <div style={S.setupRow}>
+                <button onClick={() => handleGenderSelect("boy")} style={{ ...S.setupBtn, ...(setupGender === "boy" ? S.setupBtnActive : {}) }}>👦 Niño</button>
+                <button onClick={() => handleGenderSelect("girl")} style={{ ...S.setupBtn, ...(setupGender === "girl" ? S.setupBtnActive : {}) }}>👧 Niña</button>
+              </div>
+            </div>
+
+            <div style={S.setupSection}>
+              <p style={S.setupLabel}>ESTILO DE CABELLO</p>
+              <div style={S.setupRow}>
+                {activeHairs.map(opt => (
+                  <button key={opt.id} onClick={() => setSetupBase(opt.id)} style={{ ...S.setupBtn, ...(setupBase === opt.id ? S.setupBtnActive : {}) }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={S.setupSection}>
+              <p style={S.setupLabel}>TONO DE PIEL</p>
+              <div style={S.setupRow}>
+                {[
+                  { id: "lightest", color: "#FFDFC4" }, 
+                  { id: "light", color: "#F0D5BE" }, 
+                  { id: "medium", color: "#D2996C" }, 
+                  { id: "dark", color: "#8D5524" },
+                  { id: "darkest", color: "#3D2210" }
+                ].map(opt => (
+                  <div key={opt.id} onClick={() => setSetupTone(opt.id)} style={{ ...S.colorBtn, backgroundColor: opt.color, borderColor: setupTone === opt.id ? "white" : "transparent" }} />
+                ))}
+              </div>
+            </div>
+
+            <div style={S.setupSection}>
+              <p style={S.setupLabel}>COLOR FAVORITO</p>
+              <div style={S.setupRow}>
+                {avatarColors.map(c => (
+                  <div key={c} onClick={() => setSetupColor(c)} style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupColor === c ? "white" : "transparent" }} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button onClick={startPlay} style={S.startBtn}>¡Empezar a jugar!</button>
+        </div>
+      )}
+
       {(phase === "question" || phase === "feedback") && (
-        <div style={S.body} className="anim-fadein">
+        <div style={S.bodyLarge} className="anim-fadein">
           {/* Progress dots */}
           <div style={S.progressDots}>
             {SCENARIOS.map((_, i) => (
@@ -108,79 +293,89 @@ export default function Amigos() {
             ))}
           </div>
 
-          {/* Situation card */}
-          <div style={S.situationCard}>
-            <div style={S.characterBubble}>
-              <span style={S.characterEmoji}>{scenario.characterEmoji}</span>
-            </div>
-            <div style={S.bubble}>
-              <p style={S.situationText}>{scenario.situation}</p>
-              <p style={S.questionText}>{scenario.question}</p>
-            </div>
-          </div>
+          <div style={S.gameLayout}>
+            {/* STAGE AREA (Situación Visual) */}
+            <div style={S.stageArea}>
+              <div style={S.scene}>
+                <div style={S.sceneActor}>
+                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={80} />
+                  <span style={S.actorName}>Tú</span>
+                </div>
+                
+                <div style={S.sceneAction}>
+                  <p style={S.situationText}>{scenario.situation}</p>
+                </div>
 
-          {phase === "question" && (
-            <>
-              <p style={S.chooseLabel}>elige una respuesta:</p>
-              <div style={S.optionsList}>
-                {scenario.options.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleSelect(opt)}
-                    style={S.optionBtn}
-                    className="anim-fadein"
-                  >
-                    <span style={S.optionEmoji}>{opt.emoji}</span>
-                    <span style={S.optionText}>{opt.text}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {phase === "feedback" && selected && (
-            <div style={S.feedbackArea} className="anim-fadein">
-              {/* Selected option highlighted */}
-              <div style={{
-                ...S.selectedOption,
-                background: selected.isCorrect ? "rgba(82,201,126,0.15)" : "rgba(255,107,107,0.1)",
-                borderColor: selected.isCorrect ? "var(--green)" : "var(--coral)",
-              }}>
-                <span style={S.optionEmoji}>{selected.emoji}</span>
-                <span style={S.optionText}>{selected.text}</span>
-                <span style={{
-                  ...S.checkmark,
-                  background: selected.isCorrect ? "var(--green)" : "var(--coral)",
-                }}>
-                  {selected.isCorrect ? "✓" : "✕"}
-                </span>
-              </div>
-
-              {/* AI Feedback box */}
-              <div style={{
-                ...S.aiFeedbackBox,
-                background: selected.isCorrect ? "rgba(82,201,126,0.08)" : "rgba(255,107,107,0.07)",
-                borderColor: selected.isCorrect ? "var(--green)" : "var(--coral)",
-              }}>
-                <span style={{ fontSize: 28 }}>
-                  {selected.isCorrect ? "😊" : "🤔"}
-                </span>
-                <div>
-                  <p style={{ ...S.feedbackTitle, color: selected.isCorrect ? "var(--green)" : "var(--coral)" }}>
-                    {selected.isCorrect ? "¡Muy bien!" : "Intenta de nuevo la próxima"}
-                  </p>
-                  {loadingAI
-                    ? <p style={S.feedbackText}>Pensando... ✨</p>
-                    : <p style={S.feedbackText}>{aiFeedback}</p>
-                  }
+                <div style={S.sceneActor}>
+                  <div style={S.characterBubbleLarge}>
+                    <span style={S.characterEmojiLarge}>{scenario.characterEmoji}</span>
+                  </div>
+                  <span style={S.actorName}>Otro</span>
                 </div>
               </div>
-
-              <button onClick={nextScenario} style={S.nextBtn}>
-                {scenarioIndex + 1 >= total ? "ver mi resultado →" : "siguiente escenario →"}
-              </button>
+              <p style={S.questionTextLarge}>{scenario.question}</p>
             </div>
-          )}
+
+            {/* OPTIONS/FEEDBACK AREA (Barra Lateral/Inferior) */}
+            <div style={S.optionsArea}>
+              {phase === "question" && (
+                <>
+                  <p style={S.chooseLabel}>elige una respuesta:</p>
+                  <div style={S.optionsList}>
+                    {scenario.options.map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => handleSelect(opt)}
+                        style={S.optionBtn}
+                        className="anim-fadein"
+                      >
+                        <span style={S.optionEmoji}>{opt.emoji}</span>
+                        <span style={S.optionText}>{opt.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {phase === "feedback" && selected && (
+                <div style={S.feedbackArea} className="anim-fadein">
+                  <div style={{
+                    ...S.selectedOption,
+                    background: selected.isCorrect ? "rgba(82,201,126,0.15)" : "rgba(255,107,107,0.1)",
+                    borderColor: selected.isCorrect ? "var(--green)" : "var(--coral)",
+                  }}>
+                    <span style={S.optionEmoji}>{selected.emoji}</span>
+                    <span style={S.optionText}>{selected.text}</span>
+                    <span style={{ ...S.checkmark, background: selected.isCorrect ? "var(--green)" : "var(--coral)" }}>
+                      {selected.isCorrect ? "✓" : "✕"}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    ...S.aiFeedbackBox,
+                    background: selected.isCorrect ? "rgba(82,201,126,0.08)" : "rgba(255,107,107,0.07)",
+                    borderColor: selected.isCorrect ? "var(--green)" : "var(--coral)",
+                  }}>
+                    <div style={{ flexShrink: 0 }}>
+                      {selected.isCorrect 
+                        ? <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={44} /> 
+                        : <span style={{ fontSize: 36 }}>🤔</span>}
+                    </div>
+                    <div>
+                      <p style={{ ...S.feedbackTitle, color: selected.isCorrect ? "var(--green)" : "var(--coral)" }}>
+                        {selected.isCorrect ? "¡Muy bien!" : "Intenta de nuevo la próxima"}
+                      </p>
+                      {loadingAI ? <p style={S.feedbackText}>Pensando... ✨</p> : <p style={S.feedbackText}>{aiFeedback}</p>}
+                    </div>
+                  </div>
+
+                  <button onClick={nextScenario} style={S.nextBtn}>
+                    {scenarioIndex + 1 >= total ? "ver mi resultado →" : "siguiente escenario →"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -227,27 +422,49 @@ const S: Record<string, React.CSSProperties> = {
   title:         { fontSize: 18, fontWeight: 600 },
   gemsPill:      { display: "flex", alignItems: "center", gap: 6, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 20, padding: "5px 12px" },
   gemsNum:       { fontSize: 15, fontWeight: 700, color: "var(--teal)" },
-  body:          { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 22px", gap: 16, maxWidth: 600, margin: "0 auto", width: "100%" },
+  userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: "2px solid rgba(255,255,255,0.2)", overflow: "hidden" },
+  bodyLarge:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 22px", gap: 24, maxWidth: 960, margin: "0 auto", width: "100%" },
   progressDots:  { display: "flex", gap: 6 },
   dot:           { width: 10, height: 10, borderRadius: "50%" },
-  situationCard: { background: "rgba(255,255,255,0.05)", borderRadius: 16, padding: 18, width: "100%", display: "flex", gap: 14, alignItems: "flex-end" },
-  characterBubble:{ width: 54, height: 54, borderRadius: "50%", background: "rgba(255,107,107,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  characterEmoji:{ fontSize: 28 },
-  bubble:        { background: "rgba(255,255,255,0.09)", borderRadius: "12px 12px 12px 0", padding: "12px 16px", flex: 1 },
-  situationText: { fontSize: 16, color: "var(--white)", lineHeight: 1.5, marginBottom: 4 },
-  questionText:  { fontSize: 14, color: "var(--muted)" },
+  
+  // Layout Layout & Stage Area
+  gameLayout:    { display: "flex", gap: 28, width: "100%", flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" },
+  stageArea:     { flex: "1 1 450px", background: "rgba(255,255,255,0.03)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.06)", borderRadius: 20, padding: "30px 20px", display: "flex", flexDirection: "column", gap: 28, alignItems: "center", justifyContent: "center" },
+  optionsArea:   { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 16, justifyContent: "center", minWidth: 280 },
+  scene:         { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 16 },
+  sceneActor:    { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, flexShrink: 0 },
+  actorName:     { fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 },
+  sceneAction:   { flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 16, padding: "16px", textAlign: "center" },
+  characterBubbleLarge: { width: 80, height: 80, borderRadius: "50%", background: "rgba(255,107,107,0.2)", display: "flex", alignItems: "center", justifyContent: "center" },
+  characterEmojiLarge: { fontSize: 40 },
+  situationText: { fontSize: 17, color: "var(--white)", lineHeight: 1.4, fontWeight: 500 },
+  questionTextLarge: { fontSize: 20, color: "var(--teal)", fontWeight: 700, textAlign: "center" },
+  
   chooseLabel:   { fontSize: 12, color: "var(--muted)", alignSelf: "flex-start" },
   optionsList:   { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
   optionBtn:     { background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" },
   optionEmoji:   { fontSize: 30, flexShrink: 0 },
   optionText:    { fontSize: 15, color: "var(--text)" },
   feedbackArea:  { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
-  selectedOption:{ border: "2px solid", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
+  selectedOption:{ borderWidth: 2, borderStyle: "solid", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
   checkmark:     { marginLeft: "auto", borderRadius: 8, padding: "3px 10px", fontSize: 13, color: "#fff", fontWeight: 700 },
-  aiFeedbackBox: { border: "1px solid", borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" },
+  aiFeedbackBox: { borderWidth: 1, borderStyle: "solid", borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" },
   feedbackTitle: { fontSize: 14, fontWeight: 600, marginBottom: 4 },
   feedbackText:  { fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.5 },
   nextBtn:       { background: "var(--teal)", borderRadius: 14, padding: "14px 0", fontSize: 16, fontWeight: 600, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none" },
+  // Setup
+  setupBody:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: "30px 20px", width: "100%", maxWidth: 500, margin: "0 auto" },
+  setupTitle:    { fontSize: 24, fontWeight: 700, color: "var(--white)", marginBottom: -10 },
+  setupSub:      { fontSize: 14, color: "var(--muted)" },
+  previewBox:    { margin: "10px 0" },
+  setupControls: { display: "flex", flexDirection: "column", gap: 24, width: "100%", background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "24px" },
+  setupSection:  { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
+  setupLabel:    { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 1 },
+  setupRow:      { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" },
+  setupBtn:      { padding: "8px 12px", borderRadius: 12, borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "pointer", color: "var(--white)", fontSize: 13, fontWeight: 500 },
+  setupBtnActive:{ borderColor: "var(--teal)", background: "rgba(78,205,196,0.15)", color: "var(--teal)" },
+  colorBtn:      { width: 36, height: 36, borderRadius: "50%", cursor: "pointer", borderWidth: 3, borderStyle: "solid", borderColor: "transparent", transition: "border-color 0.2s" },
+  startBtn:      { background: "var(--teal)", borderRadius: 14, padding: "16px 0", fontSize: 16, fontWeight: 700, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none", marginTop: 10 },
   // Reward
   rewardBody:    { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: "32px 24px", textAlign: "center" },
   rewardTitle:   { fontSize: 34, fontWeight: 700, color: "var(--gold)" },

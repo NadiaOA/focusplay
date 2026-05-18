@@ -119,7 +119,7 @@ const styles: Record<string, React.CSSProperties> = {
   sub: { fontSize: 16, color: "var(--muted)" },
   moduleGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%" },
   modCard: {
-    border: "2px solid", borderRadius: "var(--radius)", padding: "24px 20px",
+    borderWidth: 2, borderStyle: "solid", borderRadius: "var(--radius)", padding: "24px 20px",
     display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
     cursor: "pointer", transition: "transform 0.15s",
   },

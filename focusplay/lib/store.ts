@@ -9,6 +9,12 @@ export interface UserProfile {
   concentracionProgress: number // 0-100
   amigosLevel: number
   amigosProgress: number // 0-100
+  // Configuración del avatar
+  avatar: {
+    base: string      // ej: "boy", "girl", "neutral"
+    skinTone: string  // ej: "light", "medium", "dark"
+    color: string     // color favorito para fondo o ropa
+  }
   // Métricas para la IA
   avgResponseTime: number   // ms promedio de respuesta
   errorRate: number         // % errores recientes
@@ -24,6 +30,11 @@ const DEFAULT_PROFILE: UserProfile = {
   concentracionProgress: 45,
   amigosLevel: 1,
   amigosProgress: 28,
+  avatar: {
+    base: "neutral",
+    skinTone: "medium",
+    color: "#4ECDC4", // color 'teal' por defecto
+  },
   avgResponseTime: 2000,
   errorRate: 0.15,
   sessionMinutes: 0,

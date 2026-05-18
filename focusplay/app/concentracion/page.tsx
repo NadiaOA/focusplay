@@ -10,6 +10,7 @@ type Card = { cardId: string; pairId: string; emoji: string; label: string }
 type Phase = "playing" | "reward" | "gameover"
 
 export default function Concentracion() {
+  const [isMounted, setIsMounted] = useState(false)
   const profile        = getProfile()
   const diff           = getAIDifficulty()
   const level          = diff.level as 1 | 2 | 3
@@ -28,6 +29,10 @@ export default function Concentracion() {
   const flipTimeRef               = useRef<number>(0)
 
   const totalPairs = set.pairs.length
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Init
   useEffect(() => {
@@ -127,6 +132,8 @@ export default function Concentracion() {
 
   // Grid cols based on set size
   const gridCols = set.pairs.length <= 4 ? 4 : 4
+
+  if (!isMounted) return null
 
   return (
     <main style={S.main}>
@@ -255,7 +262,7 @@ const S: Record<string, React.CSSProperties> = {
   gameTitle:   { fontSize: 18, color: "rgba(255,255,255,0.75)" },
   timerPill:   { background: "rgba(255,209,102,0.15)", border: "1px solid rgba(255,209,102,0.4)", borderRadius: 12, padding: "5px 14px", fontSize: 15, color: "var(--gold)", display: "flex", gap: 6, alignItems: "center" },
   grid:        { display: "grid", gap: 12, width: "100%" },
-  card:        { borderRadius: 14, aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "transform 0.15s, background 0.2s", border: "2px solid" },
+  card:        { borderRadius: 14, aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "transform 0.15s, background 0.2s", borderWidth: 2, borderStyle: "solid" },
   cardHidden:  { background: "rgba(255,255,255,0.07)", borderColor: "rgba(255,255,255,0.12)" },
   cardFlipped: { background: "rgba(78,205,196,0.2)", borderColor: "var(--teal)" },
   cardMatched: { background: "rgba(82,201,126,0.2)", borderColor: "var(--green)" },
