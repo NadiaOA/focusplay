@@ -1,13 +1,14 @@
 "use client"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { getProfile, addGems, recordActivity, saveProfile } from "@/lib/store"
+import { getProfile, addGems, recordActivity, saveProfile, UserProfile } from "@/lib/store"
 import { SCENARIOS, type Scenario, type Option } from "@/lib/scenarios"
+import { REWARDS, type Reward } from "@/lib/rewards"
 
 type Phase = "setup" | "question" | "feedback" | "reward"
 
 // Componente de Avatar 100% código, sin imágenes externas
-const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, skinTone: string, bgColor: string, size?: number }) => {
+const CustomAvatar = ({ base, skinTone, bgColor, hairColor = "#2B221E", size = 64, expression = "neutral", equippedHat, equippedGlasses }: { base: string, skinTone: string, bgColor: string, hairColor?: string, size?: number, expression?: "neutral" | "happy" | "sad", equippedHat?: string | null, equippedGlasses?: string | null }) => {
   const skinMap: Record<string, string> = { 
     lightest: "#FFDFC4", 
     light: "#F0D5BE", 
@@ -35,14 +36,14 @@ const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, sk
       <path d="M 20 100 Q 50 80 80 100 Z" fill="#ffffff" opacity="0.8" />
       
       {/* Pelo trasero (Niñas) */}
-      {safeBase === "girl_long" && <path d="M 25 40 Q 15 80 30 90 Q 50 100 70 90 Q 85 80 75 40 Z" fill="#2B221E" />}
-      {safeBase === "girl_bun" && <circle cx="50" cy="18" r="14" fill="#2B221E" />}
-      {safeBase === "girl_ponytail" && <path d="M 65 35 Q 95 40 85 80 Q 75 60 70 45 Z" fill="#2B221E" />}
-      {safeBase === "girl_bob" && <path d="M 15 45 L 15 70 Q 50 80 85 70 L 85 45 Z" fill="#2B221E" />}
+      {safeBase === "girl_long" && <path d="M 25 40 Q 15 80 30 90 Q 50 100 70 90 Q 85 80 75 40 Z" fill={hairColor} />}
+      {safeBase === "girl_bun" && <circle cx="50" cy="18" r="14" fill={hairColor} />}
+      {safeBase === "girl_ponytail" && <path d="M 65 35 Q 95 40 85 80 Q 75 60 70 45 Z" fill={hairColor} />}
+      {safeBase === "girl_bob" && <path d="M 15 45 L 15 70 Q 50 80 85 70 L 85 45 Z" fill={hairColor} />}
       {safeBase === "girl_braids" && (
         <>
-          <path d="M 25 45 Q 10 70 20 95 Q 30 70 35 45 Z" fill="#2B221E" />
-          <path d="M 75 45 Q 90 70 80 95 Q 70 70 65 45 Z" fill="#2B221E" />
+          <path d="M 25 45 Q 10 70 20 95 Q 30 70 35 45 Z" fill={hairColor} />
+          <path d="M 75 45 Q 90 70 80 95 Q 70 70 65 45 Z" fill={hairColor} />
         </>
       )}
 
@@ -50,29 +51,48 @@ const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, sk
       <circle cx="50" cy="50" r="28" fill={skin} />
       
       {/* Pelo frontal Niños */}
-      {safeBase === "boy_short" && <path d="M 18 45 Q 50 10 82 45 Q 60 25 50 30 Q 30 25 18 45 Z" fill="#2B221E" />}
-      {safeBase === "boy_spiky" && <path d="M 18 45 L 25 18 L 38 30 L 50 12 L 62 30 L 75 18 L 82 45 Q 50 30 18 45 Z" fill="#2B221E" />}
-      {safeBase === "boy_curly" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill="#2B221E" />}
-      {safeBase === "boy_messy" && <path d="M 18 45 Q 25 20 40 25 Q 50 15 65 30 Q 80 20 82 45 Q 50 30 18 45 Z" fill="#2B221E" />}
-      {safeBase === "boy_part" && <path d="M 18 45 Q 40 15 82 45 Q 65 20 40 25 Q 25 20 18 45 Z" fill="#2B221E" />}
+      {safeBase === "boy_short" && <path d="M 18 45 Q 50 10 82 45 Q 60 35 50 40 Q 30 35 18 45 Z" fill={hairColor} />}
+      {safeBase === "boy_spiky" && <path d="M 18 45 L 25 18 L 38 30 L 50 12 L 62 30 L 75 18 L 82 45 Q 50 30 18 45 Z" fill={hairColor} />}
+      {safeBase === "boy_curly" && <path d="M 19 45 Q 50 10 81 45 Q 50 42 19 45 Z" fill={hairColor} />}
+      {safeBase === "boy_messy" && <path d="M 18 45 Q 25 20 40 25 Q 50 15 65 30 Q 80 20 82 45 Q 50 30 18 45 Z" fill={hairColor} />}
+      {safeBase === "boy_part" && <path d="M 18 45 Q 40 15 82 45 Q 65 20 40 25 Q 25 20 18 45 Z" fill={hairColor} />}
       
       {/* Pelo frontal Niñas */}
       {(safeBase === "girl_long" || safeBase === "girl_ponytail" || safeBase === "girl_bob" || safeBase === "girl_braids") && (
-        <path d="M 22 50 Q 50 15 78 50 Q 65 30 50 35 Q 35 30 22 50 Z" fill="#2B221E" />
+        <path d="M 22 50 Q 50 15 78 50 Q 65 30 50 35 Q 35 30 22 50 Z" fill={hairColor} />
       )}
-      {safeBase === "girl_bun" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill="#2B221E" />}
+      {safeBase === "girl_bun" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill={hairColor} />}
       
       {/* Ojos y Sonrisa */}
       <circle cx="40" cy="52" r="3.5" fill="#1C2B3A" />
       <circle cx="60" cy="52" r="3.5" fill="#1C2B3A" />
-      <path d="M 42 62 Q 50 70 58 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />
+      {expression === "neutral" && <path d="M 45 65 L 55 65" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" />}
+      {expression === "happy" && <path d="M 42 62 Q 50 70 58 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
+      {expression === "sad" && <path d="M 42 68 Q 50 60 58 68" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
+
+      {/* Gafas (encima de los ojos) */}
+      {equippedGlasses === 'glasses_classic' && (
+        <g>
+          <path d="M 30 48 C 25 48 25 58 30 58 L 38 58 L 38 48 Z" stroke="#1C2B3A" strokeWidth="2.5" fill="none" />
+          <path d="M 70 48 C 75 48 75 58 70 58 L 62 58 L 62 48 Z" stroke="#1C2B3A" strokeWidth="2.5" fill="none" />
+          <path d="M 38 53 L 62 53" stroke="#1C2B3A" strokeWidth="2.5" />
+        </g>
+      )}
+
+      {/* Sombrero (encima de todo) */}
+      {equippedHat === 'hat_cap' && (
+        <g>
+            <path d="M 20 35 Q 50 20 80 35 L 75 25 Q 50 10 25 25 Z" fill="#45B7D1" />
+            <path d="M 80 35 Q 95 38 90 30" stroke="#45B7D1" strokeWidth="4" fill="none" strokeLinecap="round" />
+        </g>
+      )}
     </svg>
   )
 }
 
 export default function Amigos() {
   const [isMounted, setIsMounted] = useState(false)
-  const profile  = getProfile()
+  const [profile, setProfile] = useState<UserProfile>(getProfile())
   const [gems, setGems]           = useState(profile.gems)
   const [scenarioIndex, setScenarioIndex] = useState(0)
   const [selected, setSelected]   = useState<Option | null>(null)
@@ -115,11 +135,20 @@ export default function Amigos() {
   const [setupBase, setSetupBase] = useState(initialBase)
   const [setupTone, setSetupTone] = useState(profile.avatar.skinTone)
   const [setupColor, setSetupColor] = useState(profile.avatar.color)
+  const [setupHair, setSetupHair] = useState((profile.avatar as any).hairColor || "#2B221E")
+  const [setupHat, setSetupHat] = useState(profile.avatar.equippedHat)
+  const [setupGlasses, setSetupGlasses] = useState(profile.avatar.equippedGlasses)
 
   const avatarColors = [
-    "#4ECDC4", "#FF6B6B", "#FFE66D", "#9D4EDD", "#45B7D1",
-    "#96CEB4", "#D4A5A5", "#FF9F1C", "#A8E6CF", "#8338EC"
+    "#4ECDC4", // verde
+    "#FF6B6B", // rojo
+    "#FFE66D", // amarillo
+    "#9D4EDD", // morado
+    "#45B7D1", // azul
+    "#FF9F1C", // naranja
   ] 
+
+  const hairColors = ["#2B221E", "#5C3A21", "#A47551", "#F7D98D", "#C75D3F", "#A9A9A9"]
 
   const boyHairs = [
     { id: "boy_short", label: "Corto" },
@@ -143,6 +172,12 @@ export default function Amigos() {
     if (g === "girl" && !girlHairs.find(h => h.id === setupBase)) setSetupBase("girl_long")
   }
 
+  const unlockedAccessories = REWARDS.filter(r => 
+    r.type === 'accessory' && profile.unlockedRewards?.includes(r.id)
+  );
+  const unlockedHats = unlockedAccessories.filter(r => r.accessoryType === 'hat');
+  const unlockedGlasses = unlockedAccessories.filter(r => r.accessoryType === 'glasses');
+
   useEffect(() => {
     setIsMounted(true)
   }, [])
@@ -152,7 +187,20 @@ export default function Amigos() {
   }, [scenarioIndex])
 
   const startPlay = () => {
-    saveProfile({ ...profile, avatar: { base: setupBase, skinTone: setupTone, color: setupColor } })
+    const newProfile = {
+      ...profile,
+      avatar: {
+        ...profile.avatar,
+        base: setupBase,
+        skinTone: setupTone,
+        color: setupColor,
+        hairColor: setupHair,
+        equippedHat: setupHat,
+        equippedGlasses: setupGlasses,
+      }
+    };
+    saveProfile(newProfile)
+    setProfile(newProfile) // Update local state to reflect changes immediately
     setFlipStart(Date.now())
     setPhase("question")
   }
@@ -257,7 +305,7 @@ export default function Amigos() {
         </div>
         {(phase !== "setup") && (
           <div style={S.userAvatarContainer}>
-            <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={36} />
+            <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={36} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
           </div>
         )}
       </header>
@@ -269,7 +317,7 @@ export default function Amigos() {
           <p style={S.setupSub}>Así te verás en el juego hoy</p>
           
           <div style={S.previewBox}>
-            <CustomAvatar base={setupBase} skinTone={setupTone} bgColor={setupColor} size={140} />
+            <CustomAvatar base={setupBase} skinTone={setupTone} bgColor={setupColor} hairColor={setupHair} size={140} expression="happy" equippedHat={setupHat} equippedGlasses={setupGlasses} />
           </div>
 
           <div style={S.setupControls}>
@@ -308,6 +356,43 @@ export default function Amigos() {
             </div>
 
             <div style={S.setupSection}>
+              <p style={S.setupLabel}>COLOR DE CABELLO</p>
+              <div style={S.setupRow}>
+                {hairColors.map(c => (
+                  <div key={c} onClick={() => setSetupHair(c)} style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupHair === c ? "white" : "transparent" }} />
+                ))}
+              </div>
+            </div>
+
+            {unlockedHats.length > 0 && (
+              <div style={S.setupSection}>
+                <p style={S.setupLabel}>SOMBRERO</p>
+                <div style={S.setupRow}>
+                  <button onClick={() => setSetupHat(null)} style={{ ...S.setupBtn, ...(setupHat === null ? S.setupBtnActive : {}) }}>Ninguno</button>
+                  {unlockedHats.map(acc => (
+                    <button key={acc.id} onClick={() => setSetupHat(acc.payload)} style={{ ...S.setupBtn, ...(setupHat === acc.payload ? S.setupBtnActive : {}) }}>
+                      {acc.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {unlockedGlasses.length > 0 && (
+              <div style={S.setupSection}>
+                <p style={S.setupLabel}>GAFAS</p>
+                <div style={S.setupRow}>
+                  <button onClick={() => setSetupGlasses(null)} style={{ ...S.setupBtn, ...(setupGlasses === null ? S.setupBtnActive : {}) }}>Ninguna</button>
+                  {unlockedGlasses.map(acc => (
+                    <button key={acc.id} onClick={() => setSetupGlasses(acc.payload)} style={{ ...S.setupBtn, ...(setupGlasses === acc.payload ? S.setupBtnActive : {}) }}>
+                      {acc.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={S.setupSection}>
               <p style={S.setupLabel}>COLOR FAVORITO</p>
               <div style={S.setupRow}>
                 {avatarColors.map(c => (
@@ -321,8 +406,13 @@ export default function Amigos() {
         </div>
       )}
 
-      {(phase === "question" || phase === "feedback") && (
-        <div style={S.bodyLarge} className="anim-fadein">
+      {(phase === "question" || phase === "feedback") && (() => {
+        const avatarExpression = phase === "feedback" 
+          ? (selected?.isCorrect ? "happy" : "sad") 
+          : "neutral";
+
+        return (
+          <div style={S.bodyLarge} className="anim-fadein">
           {/* Progress dots */}
           <div style={S.progressDots}>
             {scenariosForLevel.map((_, i) => (
@@ -340,7 +430,7 @@ export default function Amigos() {
             <div style={S.stageArea}>
               <div style={S.scene}>
                 <div style={S.sceneActor}>
-                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={80} />
+                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={80} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
                   <span style={S.actorName}>Tú</span>
                 </div>
                 
@@ -414,7 +504,7 @@ export default function Amigos() {
                   }}>
                     <div style={{ flexShrink: 0 }}>
                       {selected.isCorrect 
-                        ? <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} size={44} /> 
+                        ? <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={44} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} /> 
                         : <span style={{ fontSize: 36 }}>🤔</span>}
                     </div>
                     <div>
@@ -432,8 +522,8 @@ export default function Amigos() {
               )}
             </div>
           </div>
-        </div>
-      )}
+        </div>)
+      })()}
 
       {phase === "reward" && (
         <div style={S.rewardBody} className="anim-fadein">
@@ -501,7 +591,7 @@ const S: Record<string, React.CSSProperties> = {
   
   chooseLabel:   { fontSize: 12, color: "var(--muted)", alignSelf: "flex-start" },
   optionsList:   { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
-  optionBtn:     { background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" },
+  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" },
   optionEmoji:   { fontSize: 30, flexShrink: 0 },
   optionDisabled:{ opacity: 0.5, cursor: "not-allowed" },
   optionWrongAttempt: { borderColor: "var(--coral)", background: "rgba(255,107,107,0.1)", opacity: 0.7, cursor: "not-allowed" },

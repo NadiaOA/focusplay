@@ -1,6 +1,7 @@
 // lib/store.ts
 // Almacenamiento en memoria del lado del cliente (localStorage)
 // En producción esto iría a una base de datos
+import { getSession } from "./auth"
 
 export interface UserProfile {
   name: string
@@ -14,7 +15,11 @@ export interface UserProfile {
     base: string      // ej: "boy", "girl", "neutral"
     skinTone: string  // ej: "light", "medium", "dark"
     color: string     // color favorito para fondo o ropa
+    hairColor?: string
+    equippedHat?: string | null
+    equippedGlasses?: string | null
   }
+  unlockedRewards?: string[]
   // Métricas para la IA
   avgResponseTime: number   // ms promedio de respuesta
   errorRate: number         // % errores recientes
@@ -25,16 +30,20 @@ export interface UserProfile {
 
 const DEFAULT_PROFILE: UserProfile = {
   name: "Fidel",
-  gems: 148,
-  concentracionLevel: 2,
-  concentracionProgress: 45,
+  gems: 40,
+  concentracionLevel: 1,
+  concentracionProgress: 0,
   amigosLevel: 1,
-  amigosProgress: 28,
+  amigosProgress: 0,
   avatar: {
     base: "neutral",
     skinTone: "medium",
     color: "#4ECDC4", // color 'teal' por defecto
+    hairColor: "#2B221E",
+    equippedHat: null,
+    equippedGlasses: null,
   },
+  unlockedRewards: [],
   avgResponseTime: 2000,
   errorRate: 0.15,
   sessionMinutes: 0,
@@ -44,17 +53,24 @@ const DEFAULT_PROFILE: UserProfile = {
 
 export function getProfile(): UserProfile {
   if (typeof window === "undefined") return DEFAULT_PROFILE
-  const raw = localStorage.getItem("focusplay_profile")
+  
+  const session = getSession()
+  const storageKey = session ? `focusplay_profile_${session.id}` : "focusplay_profile"
+  
+  const raw = localStorage.getItem(storageKey)
   if (!raw) {
-    localStorage.setItem("focusplay_profile", JSON.stringify(DEFAULT_PROFILE))
-    return DEFAULT_PROFILE
+    const newProfile = { ...DEFAULT_PROFILE, name: session ? session.username : DEFAULT_PROFILE.name }
+    localStorage.setItem(storageKey, JSON.stringify(newProfile))
+    return newProfile
   }
   return { ...DEFAULT_PROFILE, ...JSON.parse(raw) }
 }
 
 export function saveProfile(profile: UserProfile) {
   if (typeof window === "undefined") return
-  localStorage.setItem("focusplay_profile", JSON.stringify(profile))
+  const session = getSession()
+  const storageKey = session ? `focusplay_profile_${session.id}` : "focusplay_profile"
+  localStorage.setItem(storageKey, JSON.stringify(profile))
 }
 
 export function addGems(n: number) {
