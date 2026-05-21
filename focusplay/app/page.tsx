@@ -1,17 +1,30 @@
 "use client"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { getProfile, getAIDifficulty, type UserProfile } from "@/lib/store"
+import { getSession, logout } from "@/lib/auth"
 
 export default function Home() {
+  const router  = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [aiHint, setAiHint]   = useState("")
+  const [aiHint,  setAiHint]  = useState("")
 
   useEffect(() => {
+    // Si no hay sesión activa, redirigir al login
+    if (!getSession()) {
+      router.replace("/login")
+      return
+    }
     const p = getProfile()
     setProfile(p)
     setAiHint(getAIDifficulty().reason)
-  }, [])
+  }, [router])
+
+  function handleLogout() {
+    logout()
+    router.replace("/login")
+  }
 
   if (!profile) return null
 
@@ -20,22 +33,25 @@ export default function Home() {
       {/* ── Top bar ── */}
       <header style={styles.header}>
         <span style={styles.logo}>FocusPlay</span>
-        <div style={styles.gemsPill}>
-          <span style={styles.gemDiamond}>◆</span>
-          <span style={styles.gemsNum}>{profile.gems} gemas</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={styles.gemsPill}>
+            <span style={styles.gemDiamond}>◆</span>
+            <span style={styles.gemsNum}>{profile.gems} gemas</span>
+          </div>
+          <button style={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
+            🚪
+          </button>
         </div>
       </header>
       <div style={styles.tealLine} />
 
       {/* ── Body ── */}
       <div style={styles.body}>
-        {/* Greeting */}
         <div style={{ textAlign: "center" }}>
           <h1 style={styles.greeting}>¡Hola, {profile.name}! 👋</h1>
           <p style={styles.sub}>¿qué quieres practicar hoy?</p>
         </div>
 
-        {/* Module cards */}
         <div style={styles.moduleGrid}>
           <ModuleCard
             href="/concentracion"
@@ -61,12 +77,10 @@ export default function Home() {
           />
         </div>
 
-        {/* Play button */}
         <Link href="/concentracion" style={styles.playBtn}>
           ¡ Jugar ahora !
         </Link>
 
-        {/* AI hint */}
         <div style={styles.aiHint}>
           <span style={styles.aiDot} />
           <span style={styles.aiText}>{aiHint}</span>
@@ -110,6 +124,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gemDiamond: { color: "var(--teal)", fontSize: 14 },
   gemsNum: { fontSize: 15, fontWeight: 600, color: "var(--teal)" },
+  logoutBtn: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 10,
+    padding: "7px 10px",
+    fontSize: 16,
+    cursor: "pointer",
+    transition: "background 0.15s",
+  },
   body: {
     flex: 1, display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center",
