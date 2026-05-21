@@ -29,6 +29,10 @@ const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, sk
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Fondo circular */}
       <circle cx="50" cy="50" r="50" fill={bgColor} />
+
+      {/* Cuello y camisa */}
+      <path d="M 35 75 L 35 100 L 65 100 L 65 75 Z" fill={skin} />
+      <path d="M 20 100 Q 50 80 80 100 Z" fill="#ffffff" opacity="0.8" />
       
       {/* Pelo trasero (Niñas) */}
       {safeBase === "girl_long" && <path d="M 25 40 Q 15 80 30 90 Q 50 100 70 90 Q 85 80 75 40 Z" fill="#2B221E" />}
@@ -41,11 +45,7 @@ const CustomAvatar = ({ base, skinTone, bgColor, size = 64 }: { base: string, sk
           <path d="M 75 45 Q 90 70 80 95 Q 70 70 65 45 Z" fill="#2B221E" />
         </>
       )}
-      
-      {/* Cuello y camisa */}
-      <path d="M 35 75 L 35 100 L 65 100 L 65 75 Z" fill={skin} />
-      <path d="M 20 100 Q 50 80 80 100 Z" fill="#ffffff" opacity="0.8" />
-      
+
       {/* Cara */}
       <circle cx="50" cy="50" r="28" fill={skin} />
       
@@ -81,9 +81,22 @@ export default function Amigos() {
   const [aiFeedback, setAiFeedback] = useState("")
   const [loadingAI, setLoadingAI] = useState(false)
   const [flipStart, setFlipStart] = useState<number>(0)
+  const [leveledUp, setLeveledUp]   = useState(false)
+  const [hasMadeMistake, setHasMadeMistake] = useState(false)
+  const [disabledOptions, setDisabledOptions] = useState<string[]>([])
+  const [firstMistakeId, setFirstMistakeId] = useState<string | null>(null)
 
-  const scenario: Scenario = SCENARIOS[scenarioIndex % SCENARIOS.length]
-  const total = SCENARIOS.length
+  // --- Lógica de Niveles ---
+  const SCENARIOS_PER_LEVEL = 5;
+  const level = profile.amigosLevel || 1;
+  const maxLevel = Math.ceil(SCENARIOS.length / SCENARIOS_PER_LEVEL);
+  const currentLevel = Math.min(level, maxLevel);
+
+  const startIndex = (currentLevel - 1) * SCENARIOS_PER_LEVEL;
+  const scenariosForLevel = SCENARIOS.slice(startIndex, startIndex + SCENARIOS_PER_LEVEL);
+
+  const scenario: Scenario = scenariosForLevel[scenarioIndex % scenariosForLevel.length]
+  const total = scenariosForLevel.length
 
   // Estados para la configuración del Avatar
   const getSafeBase = (b: string) => {
@@ -145,21 +158,33 @@ export default function Amigos() {
   }
 
   const handleSelect = async (option: Option) => {
-    if (phase !== "question") return
+    if (phase !== "question" || disabledOptions.includes(option.id)) return
 
     const responseTime = Date.now() - flipStart
     recordActivity(responseTime, !option.isCorrect)
 
-    setSelected(option)
-    setPhase("feedback")
-
     if (option.isCorrect) {
+      setSelected(option)
+      setPhase("feedback")
       setScore((s) => s + 1)
       const newGems = addGems(1)
       setGems(newGems)
+    } else {
+      // Incorrect answer
+      if (hasMadeMistake) {
+        // Final incorrect answer, go to feedback
+        setSelected(option)
+        setPhase("feedback")
+      } else {
+        // First incorrect answer, give extra try
+        setHasMadeMistake(true)
+        setDisabledOptions(prev => [...prev, option.id])
+        setFirstMistakeId(option.id)
+        return // Stop here, stay on question screen
+      }
     }
 
-    // Get AI feedback via API route
+    // Common logic for moving to feedback screen
     setLoadingAI(true)
     try {
       const res = await fetch("/api/ia", {
@@ -182,13 +207,26 @@ export default function Amigos() {
 
   const nextScenario = () => {
     const next = scenarioIndex + 1
-    if (next >= total) {
+    if (next >= scenariosForLevel.length) {
+      const updatedProfile = getProfile() // Cargar el perfil más reciente para no perder las gemas.
+      let didLevelUp = false
+      // Subir de nivel si el puntaje es bueno y no está en el nivel máximo
+      if (score >= 4 && currentLevel < maxLevel) {
+        updatedProfile.amigosLevel = currentLevel + 1
+        didLevelUp = true
+      }
+      updatedProfile.amigosProgress = Math.round((score / total) * 100)
+      saveProfile(updatedProfile)
+      setLeveledUp(didLevelUp)
       setPhase("reward")
     } else {
       setScenarioIndex(next)
       setSelected(null)
       setPhase("question")
       setAiFeedback("")
+      setHasMadeMistake(false)
+      setDisabledOptions([])
+      setFirstMistakeId(null)
     }
   }
 
@@ -198,6 +236,10 @@ export default function Amigos() {
     setPhase("question")
     setScore(0)
     setAiFeedback("")
+    setLeveledUp(false)
+    setHasMadeMistake(false)
+    setDisabledOptions([])
+    setFirstMistakeId(null)
   }
 
   if (!isMounted) return null
@@ -283,7 +325,7 @@ export default function Amigos() {
         <div style={S.bodyLarge} className="anim-fadein">
           {/* Progress dots */}
           <div style={S.progressDots}>
-            {SCENARIOS.map((_, i) => (
+            {scenariosForLevel.map((_, i) => (
               <div key={i} style={{
                 ...S.dot,
                 background: i < scenarioIndex ? "var(--green)"
@@ -320,19 +362,33 @@ export default function Amigos() {
             <div style={S.optionsArea}>
               {phase === "question" && (
                 <>
-                  <p style={S.chooseLabel}>elige una respuesta:</p>
+                  <p style={S.chooseLabel}>
+                    {hasMadeMistake ? "¡Casi! Inténtalo de nuevo:" : "elige una respuesta:"}
+                  </p>
                   <div style={S.optionsList}>
-                    {scenario.options.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => handleSelect(opt)}
-                        style={S.optionBtn}
-                        className="anim-fadein"
-                      >
-                        <span style={S.optionEmoji}>{opt.emoji}</span>
-                        <span style={S.optionText}>{opt.text}</span>
-                      </button>
-                    ))}
+                    {scenario.options.map((opt) => {
+                      const isDisabled = disabledOptions.includes(opt.id);
+                      const isFirstMistake = firstMistakeId === opt.id;
+
+                      const getStyle = () => {
+                        if (isFirstMistake) return { ...S.optionBtn, ...S.optionWrongAttempt };
+                        if (isDisabled) return { ...S.optionBtn, ...S.optionDisabled };
+                        return S.optionBtn;
+                      };
+
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => handleSelect(opt)}
+                          disabled={isDisabled}
+                          style={getStyle()}
+                          className="anim-fadein"
+                        >
+                          <span style={S.optionEmoji}>{opt.emoji}</span>
+                          <span style={S.optionText}>{opt.text}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </>
               )}
@@ -370,7 +426,7 @@ export default function Amigos() {
                   </div>
 
                   <button onClick={nextScenario} style={S.nextBtn}>
-                    {scenarioIndex + 1 >= total ? "ver mi resultado →" : "siguiente escenario →"}
+                    {scenarioIndex + 1 >= scenariosForLevel.length ? "ver mi resultado →" : "siguiente escenario →"}
                   </button>
                 </div>
               )}
@@ -384,7 +440,7 @@ export default function Amigos() {
           <span style={{ fontSize: 72 }} className="anim-bounce">🏆</span>
           <h2 style={S.rewardTitle}>¡Terminaste!</h2>
           <p style={S.rewardSub}>
-            {score} de {total} respuestas correctas
+            Nivel {currentLevel} · {score} de {total} respuestas correctas
           </p>
           <div style={S.scoreRow}>
             {Array.from({ length: total }).map((_, i) => (
@@ -399,6 +455,9 @@ export default function Amigos() {
               + {score} gemas ganadas
             </span>
           </div>
+          {leveledUp && (
+            <p style={{ ...S.rewardSub, color: "var(--green)", fontWeight: 600, marginTop: 8 }}>¡Felicidades! ¡Subiste al nivel {currentLevel + 1}! 🚀</p>
+          )}
           <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 320, textAlign: "center", lineHeight: 1.5 }}>
             {score >= 4 ? "¡Excelente trabajo practicando situaciones sociales! 🌟"
               : score >= 2 ? "¡Buen esfuerzo! Con práctica te irá cada vez mejor. 💪"
@@ -444,6 +503,8 @@ const S: Record<string, React.CSSProperties> = {
   optionsList:   { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
   optionBtn:     { background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" },
   optionEmoji:   { fontSize: 30, flexShrink: 0 },
+  optionDisabled:{ opacity: 0.5, cursor: "not-allowed" },
+  optionWrongAttempt: { borderColor: "var(--coral)", background: "rgba(255,107,107,0.1)", opacity: 0.7, cursor: "not-allowed" },
   optionText:    { fontSize: 15, color: "var(--text)" },
   feedbackArea:  { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
   selectedOption:{ borderWidth: 2, borderStyle: "solid", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
