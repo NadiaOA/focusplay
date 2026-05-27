@@ -45,13 +45,18 @@ export default function RecompensasPage() {
     setProfile(getProfile())
   }, [])
 
-  const handleUnlock = (reward: Reward) => {
-    if (!profile) return;
-    
-    if (profile.gems < reward.cost) {
-      alert("¡No tienes suficientes gemas!")
-      return
-    }
+const handleUnlock = (reward: Reward) => {
+  if (!profile) return;
+
+  // MEJORA #1: Evitar compra duplicada
+  if (profile.unlockedRewards?.includes(reward.id)) {
+    return;
+  }
+
+  if (profile.gems < reward.cost) {
+    alert("¡No tienes suficientes gemas!")
+    return
+  }
 
     // Reproducir sonido al comprar exitosamente
     playPurchaseSound()
@@ -121,11 +126,22 @@ export default function RecompensasPage() {
 
         <div style={S.rewardsGrid}>
           {REWARDS.map((reward) => {
-            const isUnlocked = profile.unlockedRewards?.includes(reward.id)
-            const canAfford = profile.gems >= reward.cost
-            
-            return (
-              <div key={reward.id} style={S.rewardCard}>
+          const isUnlocked = profile.unlockedRewards?.includes(reward.id)
+          const canAfford = profile.gems >= reward.cost
+
+          //: Border y opacidad por estado
+          const cardBorder = isUnlocked
+          ? '2px solid var(--green)'
+          : reward.comingSoon
+          ? '1px solid rgba(255,255,255,0.05)'
+          : canAfford
+          ? '2px solid rgba(78,205,196,0.4)'
+          : '1px solid rgba(255,255,255,0.08)'
+
+          const cardOpacity = reward.comingSoon ? 0.5 : 1
+
+          return (
+                <div key={reward.id} style={{ ...S.rewardCard, border: cardBorder, opacity: cardOpacity }}>
                 <div style={S.rewardIcon}>{reward.icon}</div>
                 <h3 style={S.rewardTitle}>{reward.title}</h3>
                 <p style={S.rewardDesc}>{reward.description}</p>

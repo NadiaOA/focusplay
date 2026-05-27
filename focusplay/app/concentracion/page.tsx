@@ -27,6 +27,8 @@ export default function Concentracion() {
   const [flashCard, setFlashCard] = useState<string | null>(null)
   const timerRef                  = useRef<ReturnType<typeof setInterval> | null>(null)
   const flipTimeRef               = useRef<number>(0)
+  const isProcessingRef           = useRef(false)
+  const roundRef                  = useRef(0)
 
   const totalPairs = set.pairs.length
 
@@ -64,6 +66,7 @@ export default function Concentracion() {
   }, [phase])
 
   const handleFlip = useCallback((card: Card) => {
+    if (isProcessingRef.current) return
     if (blocking) return
     if (flipped.includes(card.cardId)) return
     if (matched.includes(card.pairId)) return
@@ -74,6 +77,7 @@ export default function Concentracion() {
     setFlipped(newFlipped)
 
     if (newFlipped.length === 2) {
+      isProcessingRef.current = true
       setBlocking(true)
       const [idA, idB] = newFlipped
       const cardA = cards.find((c) => c.cardId === idA)!
@@ -81,6 +85,7 @@ export default function Concentracion() {
       const isMatch = cardA.pairId === cardB.pairId
 
       const responseTime = flipTimeRef.current > 0 ? now - flipTimeRef.current : 2000
+
       recordActivity(responseTime, !isMatch)
 
       if (isMatch) {
@@ -88,7 +93,9 @@ export default function Concentracion() {
         setFlashCard(cardA.pairId)
         setTimeout(() => setFlashCard(null), 600)
 
+        const capturedRound = roundRef.current
         setTimeout(() => {
+          if (roundRef.current !== capturedRound) return
           setMatched((m) => {
             const newMatched = [...m, cardA.pairId]
             if (newMatched.length === totalPairs) {
@@ -105,11 +112,15 @@ export default function Concentracion() {
           })
           setFlipped([])
           setBlocking(false)
+          isProcessingRef.current = false
         }, 500)
       } else {
+        const capturedRound = roundRef.current
         setTimeout(() => {
+          if (roundRef.current !== capturedRound) return
           setFlipped([])
           setBlocking(false)
+          isProcessingRef.current = false
         }, 900)
       }
     }
@@ -117,6 +128,8 @@ export default function Concentracion() {
   }, [blocking, flipped, matched, cards, totalPairs, timeLeft])
 
   const restart = () => {
+    roundRef.current += 1
+    isProcessingRef.current = false
     setCards(buildCards(set))
     setFlipped([])
     setMatched([])

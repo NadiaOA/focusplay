@@ -66,8 +66,8 @@ const CustomAvatar = ({ base, skinTone, bgColor, hairColor = "#2B221E", size = 6
       {/* Ojos y Sonrisa */}
       <circle cx="40" cy="52" r="3.5" fill="#1C2B3A" />
       <circle cx="60" cy="52" r="3.5" fill="#1C2B3A" />
-      {expression === "neutral" && <path d="M 45 65 L 55 65" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" />}
-      {expression === "happy" && <path d="M 42 62 Q 50 70 58 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
+      {expression === "neutral" && <path d="M 43 64 Q 50 68 57 64" stroke="#1C2B3A" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
+      {expression === "happy" && <path d="M 40 62 Q 50 72 60 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
       {expression === "sad" && <path d="M 42 68 Q 50 60 58 68" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
 
       {/* Gafas (encima de los ojos) */}
@@ -167,10 +167,13 @@ export default function Amigos() {
   const activeHairs = setupGender === "boy" ? boyHairs : girlHairs
 
   const handleGenderSelect = (g: "boy" | "girl") => {
-    setSetupGender(g)
-    if (g === "boy" && !boyHairs.find(h => h.id === setupBase)) setSetupBase("boy_short")
-    if (g === "girl" && !girlHairs.find(h => h.id === setupBase)) setSetupBase("girl_long")
-  }
+  setSetupGender(g)
+  const isBoyHair = boyHairs.some(h => h.id === setupBase)
+  const isGirlHair = girlHairs.some(h => h.id === setupBase)
+  
+  if (g === "boy" && !isBoyHair) setSetupBase("boy_short")
+  if (g === "girl" && !isGirlHair) setSetupBase("girl_long")
+}
 
   const unlockedAccessories = REWARDS.filter(r => 
     r.type === 'accessory' && profile.unlockedRewards?.includes(r.id)
@@ -263,7 +266,7 @@ export default function Amigos() {
         updatedProfile.amigosLevel = currentLevel + 1
         didLevelUp = true
       }
-      updatedProfile.amigosProgress = Math.round((score / total) * 100)
+      updatedProfile.amigosProgress = Math.min(100, Math.round((score / total) * 100))
       saveProfile(updatedProfile)
       setLeveledUp(didLevelUp)
       setPhase("reward")
@@ -591,7 +594,7 @@ const S: Record<string, React.CSSProperties> = {
   
   chooseLabel:   { fontSize: 12, color: "var(--muted)", alignSelf: "flex-start" },
   optionsList:   { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
-  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" },
+  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14,   cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" as const },
   optionEmoji:   { fontSize: 30, flexShrink: 0 },
   optionDisabled:{ opacity: 0.5, cursor: "not-allowed" },
   optionWrongAttempt: { borderColor: "var(--coral)", background: "rgba(255,107,107,0.1)", opacity: 0.7, cursor: "not-allowed" },
@@ -612,7 +615,7 @@ const S: Record<string, React.CSSProperties> = {
   setupSection:  { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
   setupLabel:    { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 1 },
   setupRow:      { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" },
-  setupBtn:      { padding: "8px 12px", borderRadius: 12, borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "pointer", color: "var(--white)", fontSize: 13, fontWeight: 500 },
+setupBtn:        { padding: "11px 16px", minHeight: 44, borderRadius: 12, borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "pointer", color: "var(--white)", fontSize: 14, fontWeight: 500 },
   setupBtnActive:{ borderColor: "var(--teal)", background: "rgba(78,205,196,0.15)", color: "var(--teal)" },
   colorBtn:      { width: 36, height: 36, borderRadius: "50%", cursor: "pointer", borderWidth: 3, borderStyle: "solid", borderColor: "transparent", transition: "border-color 0.2s" },
   startBtn:      { background: "var(--teal)", borderRadius: 14, padding: "16px 0", fontSize: 16, fontWeight: 700, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none", marginTop: 10 },
