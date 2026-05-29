@@ -10,6 +10,13 @@ export interface UserProfile {
   concentracionProgress: number // 0-100
   amigosLevel: number
   amigosProgress: number // 0-100
+  emocionesLevel: number
+  emocionesProgress: number   // 0-100
+  respiracionLevel: number
+  respiracionProgress: number // 0-100
+  simonLevel: number
+  simonProgress: number 
+  
   // Configuración del avatar
   avatar: {
     base: string      // ej: "boy", "girl", "neutral"
@@ -35,6 +42,12 @@ const DEFAULT_PROFILE: UserProfile = {
   concentracionProgress: 0,
   amigosLevel: 1,
   amigosProgress: 0,
+  emocionesLevel: 1,
+  emocionesProgress: 0,
+  respiracionLevel: 1,
+  respiracionProgress: 0,
+  simonLevel: 1,
+  simonProgress: 0,
   avatar: {
     base: "neutral",
     skinTone: "medium",
@@ -66,6 +79,11 @@ export function getProfile(): UserProfile {
   return { ...DEFAULT_PROFILE, ...JSON.parse(raw) }
 }
 
+export function getCurrentUser(): string | null {
+  const session = getSession()
+  return session ? session.username : null
+}
+
 export function saveProfile(profile: UserProfile) {
   if (typeof window === "undefined") return
   const session = getSession()
@@ -87,6 +105,32 @@ export function recordActivity(responseTimeMs: number, isError: boolean) {
   p.errorRate = p.errorRate * 0.8 + (isError ? 0.2 : 0)
   p.lastActivity = new Date().toISOString()
   saveProfile(p)
+}
+
+// Registra el resultado de un juego de concentración.
+// `name` se acepta por compatibilidad, pero la función opera sobre la sesión actual.
+export function recordConcentracionResult(_name: string, won: boolean, stars: number) {
+  const p = getProfile()
+  let leveledUp = false
+
+  if (won) {
+    // Añade gemas
+    p.gems += stars
+    // Incrementa progreso (arbitrario: cada estrella vale 20%)
+    p.concentracionProgress = (p.concentracionProgress ?? 0) + stars * 20
+    if (p.concentracionProgress >= 100) {
+      p.concentracionLevel = Math.min(3, (p.concentracionLevel ?? 1) + 1)
+      p.concentracionProgress = 0
+      leveledUp = true
+    }
+  } else {
+    // Penaliza ligeramente por pérdida
+    p.gems = Math.max(0, p.gems - 1)
+    p.concentracionProgress = Math.max(0, (p.concentracionProgress ?? 0) - 10)
+  }
+
+  saveProfile(p)
+  return { profile: p, leveledUp }
 }
 
 // IA básica: devuelve el nivel de dificultad recomendado (1-3)

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { getProfile, addGems, recordActivity, saveProfile, UserProfile } from "@/lib/store"
 import { SCENARIOS, type Scenario, type Option } from "@/lib/scenarios"
-import { REWARDS, type Reward } from "@/lib/rewards"
+import { REWARDS, type Reward } from "@/lib/rewards2"
 
 type Phase = "setup" | "question" | "feedback" | "reward"
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { getProfile, saveProfile, UserProfile } from "@/lib/store"
-import { REWARDS, Reward } from "@/lib/rewards"
+import { REWARDS, Reward } from "@/lib/rewards2"
 
 // Función para generar un sonido de "compra" o "magia" usando Web Audio API
 const playPurchaseSound = () => {
