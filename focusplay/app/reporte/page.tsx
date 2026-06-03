@@ -23,7 +23,7 @@ export default function ReportePadresPage() {
 
     setLoading(true)
     try {
-      const res = await fetch("/api/ia/reporte", {
+      const res = await fetch("/api/ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
