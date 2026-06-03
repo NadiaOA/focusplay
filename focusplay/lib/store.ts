@@ -3,6 +3,13 @@
 // En producción esto iría a una base de datos
 import { getSession } from "./auth"
 
+export interface ActivityLog {
+  date: string
+  situation: string
+  isCorrect: boolean
+  responseTime: number
+}
+
 export interface UserProfile {
   name: string
   gems: number
@@ -33,6 +40,7 @@ export interface UserProfile {
   sessionMinutes: number    // minutos jugados hoy
   lastActivity: string      // timestamp
   prefersFastGames: boolean
+  activityHistory?: ActivityLog[]
 }
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -62,6 +70,7 @@ const DEFAULT_PROFILE: UserProfile = {
   sessionMinutes: 0,
   lastActivity: new Date().toISOString(),
   prefersFastGames: true,
+  activityHistory: [],
 }
 
 export function getProfile(): UserProfile {
@@ -98,12 +107,25 @@ export function addGems(n: number) {
   return p.gems
 }
 
-export function recordActivity(responseTimeMs: number, isError: boolean) {
+export function recordActivity(responseTimeMs: number, isError: boolean, situation?: string) {
   const p = getProfile()
   // Smooth average
   p.avgResponseTime = Math.round(p.avgResponseTime * 0.7 + responseTimeMs * 0.3)
   p.errorRate = p.errorRate * 0.8 + (isError ? 0.2 : 0)
   p.lastActivity = new Date().toISOString()
+
+  if (situation) {
+    if (!p.activityHistory) p.activityHistory = []
+    p.activityHistory.push({
+      date: new Date().toISOString(),
+      situation,
+      isCorrect: !isError,
+      responseTime: responseTimeMs
+    })
+    // Mantener sólo las últimas 20 actividades para no saturar el prompt de la IA
+    if (p.activityHistory.length > 20) p.activityHistory.shift()
+  }
+
   saveProfile(p)
 }
 

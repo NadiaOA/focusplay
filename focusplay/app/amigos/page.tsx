@@ -212,7 +212,7 @@ export default function Amigos() {
     if (phase !== "question" || disabledOptions.includes(option.id)) return
 
     const responseTime = Date.now() - flipStart
-    recordActivity(responseTime, !option.isCorrect)
+    recordActivity(responseTime, !option.isCorrect, scenario.situation)
 
     if (option.isCorrect) {
       setSelected(option)
@@ -559,6 +559,7 @@ export default function Amigos() {
           <div style={S.rewardBtns}>
             <button onClick={restart} style={S.btnSecondary}>jugar otra vez</button>
             <Link href="/" style={S.btnPrimary}>ir al inicio</Link>
+            <Link href="/reporte" style={{ ...S.btnSecondary, background: "rgba(78,205,196,0.15)", color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>📋 ver reporte de IA</Link>
           </div>
         </div>
       )}
