@@ -4,91 +4,11 @@ import Link from "next/link"
 import { getProfile, addGems, recordActivity, saveProfile, UserProfile } from "@/lib/store"
 import { SCENARIOS, type Scenario, type Option } from "@/lib/scenarios"
 import { REWARDS, type Reward } from "@/lib/rewards2"
+import CustomAvatar from "@/components/avatar/CustomAvatar";
 
 type Phase = "setup" | "question" | "feedback" | "reward"
 
-// Componente de Avatar 100% código, sin imágenes externas
-const CustomAvatar = ({ base, skinTone, bgColor, hairColor = "#2B221E", size = 64, expression = "neutral", equippedHat, equippedGlasses }: { base: string, skinTone: string, bgColor: string, hairColor?: string, size?: number, expression?: "neutral" | "happy" | "sad", equippedHat?: string | null, equippedGlasses?: string | null }) => {
-  const skinMap: Record<string, string> = { 
-    lightest: "#FFDFC4", 
-    light: "#F0D5BE", 
-    medium: "#D2996C", 
-    dark: "#8D5524", 
-    darkest: "#3D2210" 
-  }
-  const skin = skinMap[skinTone] || skinMap.medium
 
-  // Aseguramos compatibilidad con perfiles guardados anteriormente
-  let safeBase = base
-  if (base === "boy") safeBase = "boy_short"
-  if (base === "girl") safeBase = "girl_long"
-  if (base === "neutral") safeBase = "boy_curly"
-  if (base === "spiky") safeBase = "boy_spiky"
-  if (base === "bun") safeBase = "girl_bun"
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Fondo circular */}
-      <circle cx="50" cy="50" r="50" fill={bgColor} />
-
-      {/* Cuello y camisa */}
-      <path d="M 35 75 L 35 100 L 65 100 L 65 75 Z" fill={skin} />
-      <path d="M 20 100 Q 50 80 80 100 Z" fill="#ffffff" opacity="0.8" />
-      
-      {/* Pelo trasero (Niñas) */}
-      {safeBase === "girl_long" && <path d="M 25 40 Q 15 80 30 90 Q 50 100 70 90 Q 85 80 75 40 Z" fill={hairColor} />}
-      {safeBase === "girl_bun" && <circle cx="50" cy="18" r="14" fill={hairColor} />}
-      {safeBase === "girl_ponytail" && <path d="M 65 35 Q 95 40 85 80 Q 75 60 70 45 Z" fill={hairColor} />}
-      {safeBase === "girl_bob" && <path d="M 15 45 L 15 70 Q 50 80 85 70 L 85 45 Z" fill={hairColor} />}
-      {safeBase === "girl_braids" && (
-        <>
-          <path d="M 25 45 Q 10 70 20 95 Q 30 70 35 45 Z" fill={hairColor} />
-          <path d="M 75 45 Q 90 70 80 95 Q 70 70 65 45 Z" fill={hairColor} />
-        </>
-      )}
-
-      {/* Cara */}
-      <circle cx="50" cy="50" r="28" fill={skin} />
-      
-      {/* Pelo frontal Niños */}
-      {safeBase === "boy_short" && <path d="M 18 45 Q 50 10 82 45 Q 60 35 50 40 Q 30 35 18 45 Z" fill={hairColor} />}
-      {safeBase === "boy_spiky" && <path d="M 18 45 L 25 18 L 38 30 L 50 12 L 62 30 L 75 18 L 82 45 Q 50 30 18 45 Z" fill={hairColor} />}
-      {safeBase === "boy_curly" && <path d="M 19 45 Q 50 10 81 45 Q 50 42 19 45 Z" fill={hairColor} />}
-      {safeBase === "boy_messy" && <path d="M 18 45 Q 25 20 40 25 Q 50 15 65 30 Q 80 20 82 45 Q 50 30 18 45 Z" fill={hairColor} />}
-      {safeBase === "boy_part" && <path d="M 18 45 Q 40 15 82 45 Q 65 20 40 25 Q 25 20 18 45 Z" fill={hairColor} />}
-      
-      {/* Pelo frontal Niñas */}
-      {(safeBase === "girl_long" || safeBase === "girl_ponytail" || safeBase === "girl_bob" || safeBase === "girl_braids") && (
-        <path d="M 22 50 Q 50 15 78 50 Q 65 30 50 35 Q 35 30 22 50 Z" fill={hairColor} />
-      )}
-      {safeBase === "girl_bun" && <path d="M 19 45 Q 50 15 81 45 Q 50 30 19 45 Z" fill={hairColor} />}
-      
-      {/* Ojos y Sonrisa */}
-      <circle cx="40" cy="52" r="3.5" fill="#1C2B3A" />
-      <circle cx="60" cy="52" r="3.5" fill="#1C2B3A" />
-      {expression === "neutral" && <path d="M 43 64 Q 50 68 57 64" stroke="#1C2B3A" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
-      {expression === "happy" && <path d="M 40 62 Q 50 72 60 62" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
-      {expression === "sad" && <path d="M 42 68 Q 50 60 58 68" stroke="#1C2B3A" strokeWidth="3" strokeLinecap="round" fill="none" />}
-
-      {/* Gafas (encima de los ojos) */}
-      {equippedGlasses === 'glasses_classic' && (
-        <g>
-          <path d="M 30 48 C 25 48 25 58 30 58 L 38 58 L 38 48 Z" stroke="#1C2B3A" strokeWidth="2.5" fill="none" />
-          <path d="M 70 48 C 75 48 75 58 70 58 L 62 58 L 62 48 Z" stroke="#1C2B3A" strokeWidth="2.5" fill="none" />
-          <path d="M 38 53 L 62 53" stroke="#1C2B3A" strokeWidth="2.5" />
-        </g>
-      )}
-
-      {/* Sombrero (encima de todo) */}
-      {equippedHat === 'hat_cap' && (
-        <g>
-            <path d="M 20 35 Q 50 20 80 35 L 75 25 Q 50 10 25 25 Z" fill="#45B7D1" />
-            <path d="M 80 35 Q 95 38 90 30" stroke="#45B7D1" strokeWidth="4" fill="none" strokeLinecap="round" />
-        </g>
-      )}
-    </svg>
-  )
-}
 
 export default function Amigos() {
   const [isMounted, setIsMounted] = useState(false)
