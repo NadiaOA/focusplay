@@ -8,7 +8,7 @@ import CustomAvatar from "@/components/avatar/CustomAvatar";
 
 type Phase = "setup" | "question" | "feedback" | "reward"
 
-
+const ACCENT = "#ED93B1" // rosa de Amigos, igual que en la home
 
 export default function Amigos() {
   const [isMounted, setIsMounted] = useState(false)
@@ -217,13 +217,67 @@ export default function Amigos() {
 
   return (
     <main style={S.main}>
+      <style>{`
+        @keyframes fp-pop {
+          0% { transform: scale(0.5); opacity: 0; }
+          60% { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fp-bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes fp-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes fp-shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-6px); }
+          75% { transform: translateX(6px); }
+        }
+        @keyframes fp-flip-in {
+          from { transform: scale(0.85) rotate(-3deg); opacity: 0.3; }
+          to   { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes fp-confetti {
+          0% { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(30px) scale(0.8); opacity: 0; }
+        }
+        @keyframes fp-pulse-ring {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+        @keyframes fp-wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-6deg); }
+          75% { transform: rotate(6deg); }
+        }
+
+        .fp-star { animation: fp-pop 0.4s ease-out both; }
+        .fp-pop { animation: fp-pop 0.35s ease-out; }
+        .fp-flip { animation: fp-flip-in 0.3s ease-out; }
+        .fp-shake { animation: fp-shake 0.4s ease-in-out; }
+        .fp-bounce { animation: fp-bounce 1.6s ease-in-out infinite; }
+        .fp-float { animation: fp-float 2.6s ease-in-out infinite; }
+        .fp-gems-anim { animation: fp-pulse-ring 2.5s ease-in-out infinite; }
+        .fp-confetti-row span { display: inline-block; animation: fp-confetti 1s ease-in forwards; }
+        .fp-wiggle { animation: fp-wiggle 2s ease-in-out infinite; }
+
+        .fp-btn-pop { transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
+        .fp-btn-pop:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
+        .fp-btn-pop:active:not(:disabled) { transform: scale(0.96); }
+      `}</style>
+
       <header style={S.header}>
-        <Link href="/" style={S.backBtn}>← volver</Link>
-        <span style={{ ...S.title, color: phase === "reward" ? "var(--teal)" : "var(--coral)" }}>
-          {phase === "reward" ? "FocusPlay" : "Amigos"}
+        <Link href="/" style={S.backBtn} aria-label="Volver al inicio">
+          <span style={{ fontSize: 18 }}>←</span>
+        </Link>
+        <span style={{ ...S.title, color: phase === "reward" ? "var(--teal)" : ACCENT }}>
+          {phase === "reward" ? "🌟 FocusPlay" : "🤝 Amigos"}
         </span>
-        <div style={S.gemsPill}>
-          <span style={{ color: "var(--teal)" }}>◆</span>
+        <div className="fp-gems-anim" style={S.gemsPill}>
+          <span style={{ fontSize: 16 }}>💎</span>
           <span style={S.gemsNum}>{gems}</span>
         </div>
         {(phase !== "setup") && (
@@ -236,6 +290,7 @@ export default function Amigos() {
 
       {phase === "setup" && (
         <div style={S.setupBody} className="anim-fadein">
+          <span className="fp-bounce" style={{ fontSize: 48 }}>🎨</span>
           <h2 style={S.setupTitle}>¡Crea tu personaje!</h2>
           <p style={S.setupSub}>Así te verás en el juego hoy</p>
           
@@ -245,18 +300,18 @@ export default function Amigos() {
 
           <div style={S.setupControls}>
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>GÉNERO</p>
+              <p style={S.setupLabel}>👤 GÉNERO</p>
               <div style={S.setupRow}>
-                <button onClick={() => handleGenderSelect("boy")} style={{ ...S.setupBtn, ...(setupGender === "boy" ? S.setupBtnActive : {}) }}>👦 Niño</button>
-                <button onClick={() => handleGenderSelect("girl")} style={{ ...S.setupBtn, ...(setupGender === "girl" ? S.setupBtnActive : {}) }}>👧 Niña</button>
+                <button onClick={() => handleGenderSelect("boy")} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupGender === "boy" ? S.setupBtnActive : {}) }}>👦 Niño</button>
+                <button onClick={() => handleGenderSelect("girl")} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupGender === "girl" ? S.setupBtnActive : {}) }}>👧 Niña</button>
               </div>
             </div>
 
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>ESTILO DE CABELLO</p>
+              <p style={S.setupLabel}>✂️ ESTILO DE CABELLO</p>
               <div style={S.setupRow}>
                 {activeHairs.map(opt => (
-                  <button key={opt.id} onClick={() => setSetupBase(opt.id)} style={{ ...S.setupBtn, ...(setupBase === opt.id ? S.setupBtnActive : {}) }}>
+                  <button key={opt.id} onClick={() => setSetupBase(opt.id)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupBase === opt.id ? S.setupBtnActive : {}) }}>
                     {opt.label}
                   </button>
                 ))}
@@ -264,7 +319,7 @@ export default function Amigos() {
             </div>
 
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>TONO DE PIEL</p>
+              <p style={S.setupLabel}>🎨 TONO DE PIEL</p>
               <div style={S.setupRow}>
                 {[
                   { id: "lightest", color: "#FFDFC4" }, 
@@ -273,27 +328,27 @@ export default function Amigos() {
                   { id: "dark", color: "#8D5524" },
                   { id: "darkest", color: "#3D2210" }
                 ].map(opt => (
-                  <div key={opt.id} onClick={() => setSetupTone(opt.id)} style={{ ...S.colorBtn, backgroundColor: opt.color, borderColor: setupTone === opt.id ? "white" : "transparent" }} />
+                  <div key={opt.id} onClick={() => setSetupTone(opt.id)} className="fp-btn-pop" style={{ ...S.colorBtn, backgroundColor: opt.color, borderColor: setupTone === opt.id ? "white" : "transparent" }} />
                 ))}
               </div>
             </div>
 
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>COLOR DE CABELLO</p>
+              <p style={S.setupLabel}>💇 COLOR DE CABELLO</p>
               <div style={S.setupRow}>
                 {hairColors.map(c => (
-                  <div key={c} onClick={() => setSetupHair(c)} style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupHair === c ? "white" : "transparent" }} />
+                  <div key={c} onClick={() => setSetupHair(c)} className="fp-btn-pop" style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupHair === c ? "white" : "transparent" }} />
                 ))}
               </div>
             </div>
 
             {unlockedHats.length > 0 && (
               <div style={S.setupSection}>
-                <p style={S.setupLabel}>SOMBRERO</p>
+                <p style={S.setupLabel}>🎩 SOMBRERO</p>
                 <div style={S.setupRow}>
-                  <button onClick={() => setSetupHat(null)} style={{ ...S.setupBtn, ...(setupHat === null ? S.setupBtnActive : {}) }}>Ninguno</button>
+                  <button onClick={() => setSetupHat(null)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupHat === null ? S.setupBtnActive : {}) }}>Ninguno</button>
                   {unlockedHats.map(acc => (
-                    <button key={acc.id} onClick={() => setSetupHat(acc.payload)} style={{ ...S.setupBtn, ...(setupHat === acc.payload ? S.setupBtnActive : {}) }}>
+                    <button key={acc.id} onClick={() => setSetupHat(acc.payload)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupHat === acc.payload ? S.setupBtnActive : {}) }}>
                       {acc.icon}
                     </button>
                   ))}
@@ -303,11 +358,11 @@ export default function Amigos() {
 
             {unlockedGlasses.length > 0 && (
               <div style={S.setupSection}>
-                <p style={S.setupLabel}>GAFAS</p>
+                <p style={S.setupLabel}>👓 GAFAS</p>
                 <div style={S.setupRow}>
-                  <button onClick={() => setSetupGlasses(null)} style={{ ...S.setupBtn, ...(setupGlasses === null ? S.setupBtnActive : {}) }}>Ninguna</button>
+                  <button onClick={() => setSetupGlasses(null)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupGlasses === null ? S.setupBtnActive : {}) }}>Ninguna</button>
                   {unlockedGlasses.map(acc => (
-                    <button key={acc.id} onClick={() => setSetupGlasses(acc.payload)} style={{ ...S.setupBtn, ...(setupGlasses === acc.payload ? S.setupBtnActive : {}) }}>
+                    <button key={acc.id} onClick={() => setSetupGlasses(acc.payload)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupGlasses === acc.payload ? S.setupBtnActive : {}) }}>
                       {acc.icon}
                     </button>
                   ))}
@@ -316,16 +371,16 @@ export default function Amigos() {
             )}
 
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>COLOR FAVORITO</p>
+              <p style={S.setupLabel}>💖 COLOR FAVORITO</p>
               <div style={S.setupRow}>
                 {avatarColors.map(c => (
-                  <div key={c} onClick={() => setSetupColor(c)} style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupColor === c ? "white" : "transparent" }} />
+                  <div key={c} onClick={() => setSetupColor(c)} className="fp-btn-pop" style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupColor === c ? "white" : "transparent" }} />
                 ))}
               </div>
             </div>
           </div>
 
-          <button onClick={startPlay} style={S.startBtn}>¡Empezar a jugar!</button>
+          <button onClick={startPlay} className="fp-btn-pop" style={S.startBtn}>🚀 ¡Empezar a jugar!</button>
         </div>
       )}
 
@@ -342,15 +397,17 @@ export default function Amigos() {
               <div key={i} style={{
                 ...S.dot,
                 background: i < scenarioIndex ? "var(--green)"
-                  : i === scenarioIndex ? "var(--coral)"
+                  : i === scenarioIndex ? ACCENT
                   : "rgba(255,255,255,0.15)",
+                transform: i === scenarioIndex ? "scale(1.3)" : "scale(1)",
+                transition: "all 0.25s ease",
               }} />
             ))}
           </div>
 
           <div style={S.gameLayout}>
             {/* STAGE AREA (Situación Visual) */}
-            <div style={S.stageArea}>
+            <div key={scenarioIndex} className="fp-flip" style={S.stageArea}>
               <div style={S.scene}>
                 <div style={S.sceneActor}>
                   <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={80} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
@@ -362,13 +419,13 @@ export default function Amigos() {
                 </div>
 
                 <div style={S.sceneActor}>
-                  <div style={S.characterBubbleLarge}>
+                  <div className="fp-float" style={S.characterBubbleLarge}>
                     <span style={S.characterEmojiLarge}>{scenario.characterEmoji}</span>
                   </div>
                   <span style={S.actorName}>Otro</span>
                 </div>
               </div>
-              <p style={S.questionTextLarge}>{scenario.question}</p>
+              <p style={S.questionTextLarge}>🤔 {scenario.question}</p>
             </div>
 
             {/* OPTIONS/FEEDBACK AREA (Barra Lateral/Inferior) */}
@@ -376,7 +433,7 @@ export default function Amigos() {
               {phase === "question" && (
                 <>
                   <p style={S.chooseLabel}>
-                    {hasMadeMistake ? "¡Casi! Inténtalo de nuevo:" : "elige una respuesta:"}
+                    {hasMadeMistake ? "✋ ¡Casi! Inténtalo de nuevo:" : "👇 elige una respuesta:"}
                   </p>
                   <div style={S.optionsList}>
                     {scenario.options.map((opt) => {
@@ -388,6 +445,7 @@ export default function Amigos() {
                         if (isDisabled) return { ...S.optionBtn, ...S.optionDisabled };
                         return S.optionBtn;
                       };
+                      const cls = isFirstMistake ? "fp-shake" : "fp-btn-pop";
 
                       return (
                         <button
@@ -395,7 +453,7 @@ export default function Amigos() {
                           onClick={() => handleSelect(opt)}
                           disabled={isDisabled}
                           style={getStyle()}
-                          className="anim-fadein"
+                          className={`anim-fadein ${cls}`}
                         >
                           <span style={S.optionEmoji}>{opt.emoji}</span>
                           <span style={S.optionText}>{opt.text}</span>
@@ -408,7 +466,7 @@ export default function Amigos() {
 
               {phase === "feedback" && selected && (
                 <div style={S.feedbackArea} className="anim-fadein">
-                  <div style={{
+                  <div className="fp-pop" style={{
                     ...S.selectedOption,
                     background: selected.isCorrect ? "rgba(82,201,126,0.15)" : "rgba(255,107,107,0.1)",
                     borderColor: selected.isCorrect ? "var(--green)" : "var(--coral)",
@@ -428,18 +486,18 @@ export default function Amigos() {
                     <div style={{ flexShrink: 0 }}>
                       {selected.isCorrect 
                         ? <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={44} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} /> 
-                        : <span style={{ fontSize: 36 }}>🤔</span>}
+                        : <span className="fp-wiggle" style={{ fontSize: 36, display: "inline-block" }}>🤔</span>}
                     </div>
                     <div>
                       <p style={{ ...S.feedbackTitle, color: selected.isCorrect ? "var(--green)" : "var(--coral)" }}>
-                        {selected.isCorrect ? "¡Muy bien!" : "Intenta de nuevo la próxima"}
+                        {selected.isCorrect ? "🎉 ¡Muy bien!" : "💛 Intenta de nuevo la próxima"}
                       </p>
                       {loadingAI ? <p style={S.feedbackText}>Pensando... ✨</p> : <p style={S.feedbackText}>{aiFeedback}</p>}
                     </div>
                   </div>
 
-                  <button onClick={nextScenario} style={S.nextBtn}>
-                    {scenarioIndex + 1 >= scenariosForLevel.length ? "ver mi resultado →" : "siguiente escenario →"}
+                  <button onClick={nextScenario} className="fp-btn-pop" style={S.nextBtn}>
+                    {scenarioIndex + 1 >= scenariosForLevel.length ? "✨ ver mi resultado →" : "siguiente escenario →"}
                   </button>
                 </div>
               )}
@@ -450,26 +508,32 @@ export default function Amigos() {
 
       {phase === "reward" && (
         <div style={S.rewardBody} className="anim-fadein">
-          <span style={{ fontSize: 72 }} className="anim-bounce">🏆</span>
+          <div className="fp-confetti-row" style={S.confettiRow}>
+            {["🎉", "✨", "🎈", "🌈", "🎊"].map((e, i) => (
+              <span key={i} style={{ fontSize: 26, animationDelay: `${i * 0.1}s` }}>{e}</span>
+            ))}
+          </div>
+          <span style={{ fontSize: 72 }} className="fp-bounce">🏆</span>
           <h2 style={S.rewardTitle}>¡Terminaste!</h2>
           <p style={S.rewardSub}>
             Nivel {currentLevel} · {score} de {total} respuestas correctas
           </p>
           <div style={S.scoreRow}>
             {Array.from({ length: total }).map((_, i) => (
-              <span key={i} style={{ fontSize: 28, color: i < score ? "var(--gold)" : "rgba(255,255,255,0.15)" }}>
-                ★
+              <span key={i} className={i < score ? "fp-star" : ""}
+                style={{ fontSize: 28, opacity: i < score ? 1 : 0.2, animationDelay: `${i * 0.08}s` }}>
+                ⭐
               </span>
             ))}
           </div>
-          <div style={S.gemReward}>
-            <span style={{ color: "var(--teal)" }}>◆</span>
+          <div className="fp-gems-anim" style={S.gemReward}>
+            <span style={{ fontSize: 20 }}>💎</span>
             <span style={{ fontSize: 18, fontWeight: 700, color: "var(--teal)" }}>
               + {score} gemas ganadas
             </span>
           </div>
           {leveledUp && (
-            <p style={{ ...S.rewardSub, color: "var(--green)", fontWeight: 600, marginTop: 8 }}>¡Felicidades! ¡Subiste al nivel {currentLevel + 1}! 🚀</p>
+            <p className="fp-card-match" style={{ ...S.rewardSub, color: "var(--green)", fontWeight: 600, marginTop: 8 }}>🚀 ¡Felicidades! ¡Subiste al nivel {currentLevel + 1}!</p>
           )}
           <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 320, textAlign: "center", lineHeight: 1.5 }}>
             {score >= 4 ? "¡Excelente trabajo practicando situaciones sociales! 🌟"
@@ -477,9 +541,9 @@ export default function Amigos() {
               : "Sigue practicando, cada intento te hace más fuerte. 🤗"}
           </p>
           <div style={S.rewardBtns}>
-            <button onClick={restart} style={S.btnSecondary}>jugar otra vez</button>
-            <Link href="/" style={S.btnPrimary}>ir al inicio</Link>
-            <Link href="/reporte" style={{ ...S.btnSecondary, background: "rgba(78,205,196,0.15)", color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>📋 ver reporte de IA</Link>
+            <button onClick={restart} className="fp-btn-pop" style={S.btnSecondary}>🔄 jugar otra vez</button>
+            <Link href="/" className="fp-btn-pop" style={S.btnPrimary}>ir al inicio</Link>
+            <Link href="/reporte" className="fp-btn-pop" style={{ ...S.btnSecondary, background: "rgba(78,205,196,0.15)", color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>📋 ver reporte de IA</Link>
           </div>
         </div>
       )}
@@ -491,62 +555,63 @@ const S: Record<string, React.CSSProperties> = {
   main:          { minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" },
   header:        { padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg2)" },
   tealLine:      { height: 2, background: "var(--teal)" },
-  backBtn:       { background: "rgba(255,255,255,0.07)", borderRadius: 8, padding: "7px 14px", fontSize: 13, color: "var(--muted)", display: "block" },
-  title:         { fontSize: 18, fontWeight: 600 },
+  backBtn:       { width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--white)", textDecoration: "none" },
+  title:         { fontSize: 18, fontWeight: 700 },
   gemsPill:      { display: "flex", alignItems: "center", gap: 6, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 20, padding: "5px 12px" },
   gemsNum:       { fontSize: 15, fontWeight: 700, color: "var(--teal)" },
-  userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: "2px solid rgba(255,255,255,0.2)", overflow: "hidden" },
+  userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: `2px solid ${ACCENT}55`, overflow: "hidden" },
   bodyLarge:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 22px", gap: 24, maxWidth: 960, margin: "0 auto", width: "100%" },
-  progressDots:  { display: "flex", gap: 6 },
-  dot:           { width: 10, height: 10, borderRadius: "50%" },
-  
-  // Layout Layout & Stage Area
+  progressDots:  { display: "flex", gap: 8 },
+  dot:           { width: 12, height: 12, borderRadius: "50%" },
+
+  // Layout & Stage Area
   gameLayout:    { display: "flex", gap: 28, width: "100%", flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" },
-  stageArea:     { flex: "1 1 450px", background: "rgba(255,255,255,0.03)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.06)", borderRadius: 20, padding: "30px 20px", display: "flex", flexDirection: "column", gap: 28, alignItems: "center", justifyContent: "center" },
+  stageArea:     { flex: "1 1 450px", background: `${ACCENT}0D`, borderWidth: 2, borderStyle: "solid", borderColor: `${ACCENT}33`, borderRadius: 24, padding: "30px 20px", display: "flex", flexDirection: "column", gap: 28, alignItems: "center", justifyContent: "center" },
   optionsArea:   { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 16, justifyContent: "center", minWidth: 280 },
   scene:         { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 16 },
   sceneActor:    { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, flexShrink: 0 },
   actorName:     { fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 },
-  sceneAction:   { flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 16, padding: "16px", textAlign: "center" },
+  sceneAction:   { flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 18, padding: "16px", textAlign: "center" },
   characterBubbleLarge: { width: 80, height: 80, borderRadius: "50%", background: "rgba(255,107,107,0.2)", display: "flex", alignItems: "center", justifyContent: "center" },
   characterEmojiLarge: { fontSize: 40 },
   situationText: { fontSize: 17, color: "var(--white)", lineHeight: 1.4, fontWeight: 500 },
-  questionTextLarge: { fontSize: 20, color: "var(--teal)", fontWeight: 700, textAlign: "center" },
-  
-  chooseLabel:   { fontSize: 12, color: "var(--muted)", alignSelf: "flex-start" },
-  optionsList:   { display: "flex", flexDirection: "column", gap: 10, width: "100%" },
-  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14,   cursor: "pointer", transition: "background 0.15s, border-color 0.15s", textAlign: "left" as const },
+  questionTextLarge: { fontSize: 20, color: ACCENT, fontWeight: 800, textAlign: "center" },
+
+  chooseLabel:   { fontSize: 13, color: "var(--muted)", alignSelf: "flex-start", fontWeight: 600 },
+  optionsList:   { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
+  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 18, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left" as const },
   optionEmoji:   { fontSize: 30, flexShrink: 0 },
   optionDisabled:{ opacity: 0.5, cursor: "not-allowed" },
   optionWrongAttempt: { borderColor: "var(--coral)", background: "rgba(255,107,107,0.1)", opacity: 0.7, cursor: "not-allowed" },
   optionText:    { fontSize: 15, color: "var(--text)" },
   feedbackArea:  { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
-  selectedOption:{ borderWidth: 2, borderStyle: "solid", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
-  checkmark:     { marginLeft: "auto", borderRadius: 8, padding: "3px 10px", fontSize: 13, color: "#fff", fontWeight: 700 },
-  aiFeedbackBox: { borderWidth: 1, borderStyle: "solid", borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" },
-  feedbackTitle: { fontSize: 14, fontWeight: 600, marginBottom: 4 },
+  selectedOption:{ borderWidth: 2, borderStyle: "solid", borderRadius: 18, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
+  checkmark:     { marginLeft: "auto", borderRadius: 10, padding: "3px 10px", fontSize: 13, color: "#fff", fontWeight: 700 },
+  aiFeedbackBox: { borderWidth: 1, borderStyle: "solid", borderRadius: 18, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" },
+  feedbackTitle: { fontSize: 14, fontWeight: 700, marginBottom: 4 },
   feedbackText:  { fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.5 },
-  nextBtn:       { background: "var(--teal)", borderRadius: 14, padding: "14px 0", fontSize: 16, fontWeight: 600, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none" },
+  nextBtn:       { background: ACCENT, borderRadius: 18, padding: "14px 0", fontSize: 16, fontWeight: 700, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none" },
   // Setup
-  setupBody:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: "30px 20px", width: "100%", maxWidth: 500, margin: "0 auto" },
-  setupTitle:    { fontSize: 24, fontWeight: 700, color: "var(--white)", marginBottom: -10 },
+  setupBody:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "30px 20px", width: "100%", maxWidth: 500, margin: "0 auto" },
+  setupTitle:    { fontSize: 26, fontWeight: 800, color: "var(--white)", marginBottom: -6 },
   setupSub:      { fontSize: 14, color: "var(--muted)" },
   previewBox:    { margin: "10px 0" },
-  setupControls: { display: "flex", flexDirection: "column", gap: 24, width: "100%", background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "24px" },
+  setupControls: { display: "flex", flexDirection: "column", gap: 24, width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${ACCENT}22`, borderRadius: 24, padding: "24px" },
   setupSection:  { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
   setupLabel:    { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 1 },
   setupRow:      { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" },
-setupBtn:        { padding: "11px 16px", minHeight: 44, borderRadius: 12, borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "pointer", color: "var(--white)", fontSize: 14, fontWeight: 500 },
-  setupBtnActive:{ borderColor: "var(--teal)", background: "rgba(78,205,196,0.15)", color: "var(--teal)" },
-  colorBtn:      { width: 36, height: 36, borderRadius: "50%", cursor: "pointer", borderWidth: 3, borderStyle: "solid", borderColor: "transparent", transition: "border-color 0.2s" },
-  startBtn:      { background: "var(--teal)", borderRadius: 14, padding: "16px 0", fontSize: 16, fontWeight: 700, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none", marginTop: 10 },
+  setupBtn:      { padding: "11px 16px", minHeight: 44, borderRadius: 14, borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "pointer", color: "var(--white)", fontSize: 14, fontWeight: 500 },
+  setupBtnActive:{ borderColor: ACCENT, background: `${ACCENT}26`, color: ACCENT },
+  colorBtn:      { width: 38, height: 38, borderRadius: "50%", cursor: "pointer", borderWidth: 3, borderStyle: "solid", borderColor: "transparent", transition: "border-color 0.2s" },
+  startBtn:      { background: ACCENT, borderRadius: 18, padding: "16px 0", fontSize: 17, fontWeight: 800, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none", marginTop: 6 },
   // Reward
-  rewardBody:    { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: "32px 24px", textAlign: "center" },
-  rewardTitle:   { fontSize: 34, fontWeight: 700, color: "var(--gold)" },
+  rewardBody:    { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "32px 24px", textAlign: "center" },
+  confettiRow:   { display: "flex", gap: 8, justifyContent: "center" },
+  rewardTitle:   { fontSize: 34, fontWeight: 800, color: "var(--gold)" },
   rewardSub:     { fontSize: 16, color: "var(--muted)" },
-  scoreRow:      { display: "flex", gap: 8 },
-  gemReward:     { background: "rgba(78,205,196,0.1)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 14, padding: "12px 24px", display: "flex", alignItems: "center", gap: 10 },
+  scoreRow:      { display: "flex", gap: 8, margin: "4px 0" },
+  gemReward:     { background: "rgba(78,205,196,0.1)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 999, padding: "10px 22px", display: "flex", alignItems: "center", gap: 10 },
   rewardBtns:    { display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" },
-  btnPrimary:    { background: "var(--teal)", borderRadius: 14, padding: "13px 28px", fontSize: 16, fontWeight: 600, color: "#1C2B3A", cursor: "pointer", border: "none", display: "block" },
-  btnSecondary:  { background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "13px 28px", fontSize: 16, color: "rgba(255,255,255,0.7)", cursor: "pointer", border: "none" },
+  btnPrimary:    { background: "var(--teal)", borderRadius: 16, padding: "13px 28px", fontSize: 16, fontWeight: 700, color: "#1C2B3A", cursor: "pointer", border: "none", display: "block" },
+  btnSecondary:  { background: "rgba(255,255,255,0.08)", borderRadius: 16, padding: "13px 28px", fontSize: 16, color: "rgba(255,255,255,0.7)", cursor: "pointer", border: "none" },
 }
