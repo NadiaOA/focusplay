@@ -410,11 +410,18 @@ export default function Amigos() {
             <div key={scenarioIndex} className="fp-flip" style={S.stageArea}>
               <div style={S.scene}>
                 <div style={S.sceneActor}>
-                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={80} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
+                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={60} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
                   <span style={S.actorName}>Tú</span>
                 </div>
                 
                 <div style={S.sceneAction}>
+                  {scenario.imageUrl && (
+                    <img 
+                      src={scenario.imageUrl} 
+                      alt="Apoyo visual" 
+                      style={S.scenarioImage} 
+                    />
+                  )}
                   <p style={S.situationText}>{scenario.situation}</p>
                 </div>
 
@@ -560,30 +567,31 @@ const S: Record<string, React.CSSProperties> = {
   gemsPill:      { display: "flex", alignItems: "center", gap: 6, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 20, padding: "5px 12px" },
   gemsNum:       { fontSize: 15, fontWeight: 700, color: "var(--teal)" },
   userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: `2px solid ${ACCENT}55`, overflow: "hidden" },
-  bodyLarge:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 22px", gap: 24, maxWidth: 960, margin: "0 auto", width: "100%" },
+  bodyLarge:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 22px", gap: 16, maxWidth: 1100, margin: "0 auto", width: "100%" },
   progressDots:  { display: "flex", gap: 8 },
   dot:           { width: 12, height: 12, borderRadius: "50%" },
 
   // Layout & Stage Area
-  gameLayout:    { display: "flex", gap: 28, width: "100%", flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" },
-  stageArea:     { flex: "1 1 450px", background: `${ACCENT}0D`, borderWidth: 2, borderStyle: "solid", borderColor: `${ACCENT}33`, borderRadius: 24, padding: "30px 20px", display: "flex", flexDirection: "column", gap: 28, alignItems: "center", justifyContent: "center" },
-  optionsArea:   { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 16, justifyContent: "center", minWidth: 280 },
+  gameLayout:    { display: "flex", gap: 24, width: "100%", flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" },
+  stageArea:     { flex: "2 1 600px", background: `${ACCENT}0D`, borderWidth: 2, borderStyle: "solid", borderColor: `${ACCENT}33`, borderRadius: 24, padding: "16px", display: "flex", flexDirection: "column", gap: 16, alignItems: "center", justifyContent: "center" },
+  optionsArea:   { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 12, justifyContent: "center", minWidth: 280 },
   scene:         { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 16 },
   sceneActor:    { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, flexShrink: 0 },
   actorName:     { fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 },
   sceneAction:   { flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 18, padding: "16px", textAlign: "center" },
-  characterBubbleLarge: { width: 80, height: 80, borderRadius: "50%", background: "rgba(255,107,107,0.2)", display: "flex", alignItems: "center", justifyContent: "center" },
-  characterEmojiLarge: { fontSize: 40 },
+  scenarioImage: { width: "100%", maxHeight: 400, borderRadius: 12, marginBottom: 10, objectFit: "cover" as const },
+  characterBubbleLarge: { width: 60, height: 60, borderRadius: "50%", background: "rgba(255,107,107,0.2)", display: "flex", alignItems: "center", justifyContent: "center" },
+  characterEmojiLarge: { fontSize: 30 },
   situationText: { fontSize: 17, color: "var(--white)", lineHeight: 1.4, fontWeight: 500 },
   questionTextLarge: { fontSize: 20, color: ACCENT, fontWeight: 800, textAlign: "center" },
 
   chooseLabel:   { fontSize: 13, color: "var(--muted)", alignSelf: "flex-start", fontWeight: 600 },
-  optionsList:   { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
-  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 18, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left" as const },
-  optionEmoji:   { fontSize: 30, flexShrink: 0 },
+  optionsList:   { display: "flex", flexDirection: "column", gap: 8, width: "100%" },
+  optionBtn:     { background: "rgba(255,255,255,0.06)", borderWidth: 2, borderStyle: "solid", borderColor: "rgba(255,255,255,0.12)", borderRadius: 16, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" as const },
+  optionEmoji:   { fontSize: 24, flexShrink: 0 },
   optionDisabled:{ opacity: 0.5, cursor: "not-allowed" },
   optionWrongAttempt: { borderColor: "var(--coral)", background: "rgba(255,107,107,0.1)", opacity: 0.7, cursor: "not-allowed" },
-  optionText:    { fontSize: 15, color: "var(--text)" },
+  optionText:    { fontSize: 14, color: "var(--text)" },
   feedbackArea:  { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
   selectedOption:{ borderWidth: 2, borderStyle: "solid", borderRadius: 18, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 },
   checkmark:     { marginLeft: "auto", borderRadius: 10, padding: "3px 10px", fontSize: 13, color: "#fff", fontWeight: 700 },
