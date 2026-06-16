@@ -22,7 +22,7 @@ export const SCENARIOS: Scenario[] = [
     situation: "Un compañero no quiere jugar contigo.",
     question: "¿qué haces?",
     characterEmoji: "🧒",
-    imageUrl: "https://www.shutterstock.com/image-vector/boy-wants-play-other-children-600w-69752257.jpg", // <-- La conectas así
+    imageUrl: "https://imgur.com/McPO4Mw.png", // <-- La conectas así
     options: [
       { id: "a", emoji: "😤", text: "Me enojo y me voy",                       isCorrect: false, feedback: "Enojarse puede alejar a los amigos. Intenta buscar otra solución." },
       { id: "b", emoji: "🙋", text: "Le pregunto si jugamos algo diferente",    isCorrect: true,  feedback: "¡Muy bien! Proponer alternativas es una excelente forma de hacer amigos. 🌟" },

@@ -8,28 +8,83 @@ export interface Reward {
   cost: number;
   type: 'video' | 'game' | 'feature' | 'accessory';
   payload: string; // e.g., YouTube video ID, game identifier
-  accessoryType?: 'hat' | 'glasses';
+  accessoryType?: 'hat' | 'glasses' | 'background';
   comingSoon?: boolean;
 }
 
 export const REWARDS: Reward[] = [
   {
     id: 'video_cats',
-    title: 'Videos de Gatos',
-    description: '¡Relájate 5 minutos viendo videos divertidos de gatitos!',
+    title: 'Videos de Animales',
+    description: '¡Relájate un rato viendo videos divertidos de animales tiernos y graciosos!',
     icon: '😺',
     cost: 20,
     type: 'video',
-    payload: '5dsGWM5XGdg', // A 5-minute compilation of funny cats
+    payload: 'GkhulbxS190', // A 5-minute compilation of funny cats
+  },
+  {
+    id: 'video_world',
+    title: 'Viaje por el mundo',
+    description: 'Un video relajante de 10 minutos.',
+    icon: '🌳',
+    cost: 35,
+    type: 'video',
+    payload: 'FmBlDrbWAHA', // Nuevo ID de video relajante del espacio que permite incrustación
   },
   {
     id: 'video_space',
-    title: 'Viaje por el Espacio',
-    description: 'Un video relajante de 10 minutos viajando por las estrellas.',
-    icon: '🚀',
+    title: 'Odisea',
+    description: '¿Cómo es que inicio el universo? Cónocelo en este viaje por el espacio.',
+    icon: '🌌',
+    cost: 50,
+    type: 'video',
+    payload: 'TBikbn5XJhg', // Nuevo ID de video relajante del espacio que permite incrustación
+  },
+  {
+    id: 'video_marble_run',
+    title: 'Carrera de Canicas',
+    description: 'Sigue a las canicas en un circuito fascinante y colorido.',
+    icon: '🎢',
+    cost: 30,
+    type: 'video',
+    payload: '_biIzYIUSWg', // Pista de canicas (Marble run)
+  },
+  {
+    id: 'video_kinetic_sand',
+    title: 'Arena Mágica',
+    description: 'Video relajante y visualmente estimulante de arena cinética.',
+    icon: '🏖️',
+    cost: 30,
+    type: 'video',
+    payload: 'Dikz3vHp1eQ', // Arena cinética (Satisfying ASMR)
+  },
+  {
+    id: 'video_train_ride',
+    title: 'Viaje en Tren',
+    description: 'Mira por la ventana de un tren mientras recorre hermosos paisajes.',
+    icon: '🚂',
     cost: 35,
     type: 'video',
-    payload: '8gD_9222QpA', // 10-min 4K space travel video
+    payload: 'ADt_RisXY0U', // Viaje en tren (Train POV)
+  },
+  {
+    id: 'video_maincra',
+    title: 'Animación de Minecraft',
+    description: 'Conoce esta historia a través del mundo cúbico',
+    icon: '🎬',
+    cost: 60,
+    type: 'video',
+    payload: 'cYqEEqnL1OQ', // Viaje en tren (Train POV)
+  },
+  {
+    id: 'avatar_shiny_bg',
+    title: 'Fondo Animado (Avatar)',
+    description: 'Un fondo animado de bloques para tu avatar.',
+    icon: '🧊',
+    cost: 50,
+    type: 'accessory',
+    payload: 'minecraft_bg',
+    accessoryType: 'background',
   },
   {
     id: 'acc_glasses_classic',
@@ -50,16 +105,6 @@ export const REWARDS: Reward[] = [
     type: 'accessory',
     payload: 'hat_cap',
     accessoryType: 'hat',
-  },
-  {
-    id: 'avatar_shiny_bg',
-    title: 'Fondo Animado',
-    description: 'Un fondo brillante y animado para tu avatar.',
-    icon: '✨',
-    cost: 50,
-    type: 'feature',
-    payload: 'animated_background',
-    comingSoon: true,
   },
   {
     id: 'game_maze',

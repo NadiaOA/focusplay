@@ -32,6 +32,7 @@ export interface UserProfile {
     hairColor?: string
     equippedHat?: string | null
     equippedGlasses?: string | null
+    equippedBackground?: string | null
   }
   unlockedRewards?: string[]
   // Métricas para la IA
@@ -45,7 +46,7 @@ export interface UserProfile {
 
 const DEFAULT_PROFILE: UserProfile = {
   name: "Fidel",
-  gems: 40,
+  gems: 500,
   concentracionLevel: 1,
   concentracionProgress: 0,
   amigosLevel: 1,
@@ -63,6 +64,7 @@ const DEFAULT_PROFILE: UserProfile = {
     hairColor: "#2B221E",
     equippedHat: null,
     equippedGlasses: null,
+    equippedBackground: null,
   },
   unlockedRewards: [],
   avgResponseTime: 2000,

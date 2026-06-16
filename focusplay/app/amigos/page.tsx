@@ -6,7 +6,7 @@ import { SCENARIOS, type Scenario, type Option } from "@/lib/scenarios"
 import { REWARDS, type Reward } from "@/lib/rewards2"
 import CustomAvatar from "@/components/avatar/CustomAvatar";
 
-type Phase = "setup" | "question" | "feedback" | "reward"
+type Phase = "setup" | "question" | "feedback" | "reward" | "level_select"
 
 const ACCENT = "#ED93B1" // rosa de Amigos, igual que en la home
 
@@ -16,7 +16,6 @@ export default function Amigos() {
   const [gems, setGems]           = useState(profile.gems)
   const [scenarioIndex, setScenarioIndex] = useState(0)
   const [selected, setSelected]   = useState<Option | null>(null)
-  const [phase, setPhase]         = useState<Phase>("setup")
   const [score, setScore]         = useState(0)
   const [aiFeedback, setAiFeedback] = useState("")
   const [loadingAI, setLoadingAI] = useState(false)
@@ -31,8 +30,12 @@ export default function Amigos() {
   const level = profile.amigosLevel || 1;
   const maxLevel = Math.ceil(SCENARIOS.length / SCENARIOS_PER_LEVEL);
   const currentLevel = Math.min(level, maxLevel);
-
-  const startIndex = (currentLevel - 1) * SCENARIOS_PER_LEVEL;
+  
+  const [chosenLevel, setChosenLevel] = useState<number>(currentLevel)
+  const [phase, setPhase]         = useState<Phase>(currentLevel > 1 ? "level_select" : "question")
+  
+  const activeLevel = chosenLevel;
+  const startIndex = (activeLevel - 1) * SCENARIOS_PER_LEVEL;
   const scenariosForLevel = SCENARIOS.slice(startIndex, startIndex + SCENARIOS_PER_LEVEL);
 
   const scenario: Scenario = scenariosForLevel[scenarioIndex % scenariosForLevel.length]
@@ -58,6 +61,7 @@ export default function Amigos() {
   const [setupHair, setSetupHair] = useState((profile.avatar as any).hairColor || "#2B221E")
   const [setupHat, setSetupHat] = useState(profile.avatar.equippedHat)
   const [setupGlasses, setSetupGlasses] = useState(profile.avatar.equippedGlasses)
+  const [setupBackground, setSetupBackground] = useState(profile.avatar.equippedBackground)
 
   const avatarColors = [
     "#4ECDC4", // verde
@@ -100,6 +104,7 @@ export default function Amigos() {
   );
   const unlockedHats = unlockedAccessories.filter(r => r.accessoryType === 'hat');
   const unlockedGlasses = unlockedAccessories.filter(r => r.accessoryType === 'glasses');
+  const unlockedBackgrounds = unlockedAccessories.filter(r => r.accessoryType === 'background');
 
   useEffect(() => {
     setIsMounted(true)
@@ -120,12 +125,26 @@ export default function Amigos() {
         hairColor: setupHair,
         equippedHat: setupHat,
         equippedGlasses: setupGlasses,
+        equippedBackground: setupBackground,
       }
     };
     saveProfile(newProfile)
     setProfile(newProfile) // Update local state to reflect changes immediately
     setFlipStart(Date.now())
-    setPhase("question")
+    setPhase(currentLevel > 1 ? "level_select" : "question")
+  }
+
+  const handleEditAvatar = () => {
+    const safeBase = getSafeBase(profile.avatar.base)
+    setSetupBase(safeBase)
+    setSetupGender(["girl_long", "girl_bun", "girl_ponytail", "girl_bob", "girl_braids"].includes(safeBase) ? "girl" : "boy")
+    setSetupTone(profile.avatar.skinTone)
+    setSetupColor(profile.avatar.color)
+    setSetupHair((profile.avatar as any).hairColor || "#2B221E")
+    setSetupHat(profile.avatar.equippedHat)
+    setSetupGlasses(profile.avatar.equippedGlasses)
+    setSetupBackground(profile.avatar.equippedBackground)
+    setPhase("setup")
   }
 
   const handleSelect = async (option: Option) => {
@@ -181,13 +200,14 @@ export default function Amigos() {
     if (next >= scenariosForLevel.length) {
       const updatedProfile = getProfile() // Cargar el perfil más reciente para no perder las gemas.
       let didLevelUp = false
-      // Subir de nivel si el puntaje es bueno y no está en el nivel máximo
-      if (score >= 4 && currentLevel < maxLevel) {
+      // Subir de nivel si el puntaje es bueno y está jugando su nivel máximo actual
+      if (score >= 4 && activeLevel === currentLevel && currentLevel < maxLevel) {
         updatedProfile.amigosLevel = currentLevel + 1
         didLevelUp = true
       }
       updatedProfile.amigosProgress = Math.min(100, Math.round((score / total) * 100))
       saveProfile(updatedProfile)
+      setProfile(updatedProfile)
       setLeveledUp(didLevelUp)
       setPhase("reward")
     } else {
@@ -253,6 +273,17 @@ export default function Amigos() {
           25% { transform: rotate(-6deg); }
           75% { transform: rotate(6deg); }
         }
+        @keyframes fp-bg-scroll {
+          from { background-position: 0 0; }
+          to { background-position: 64px 64px; }
+        }
+        .fp-bg-minecraft {
+          background-color: #5C3A21;
+          background-image: linear-gradient(45deg, #4A2E1B 25%, transparent 25%, transparent 75%, #4A2E1B 75%, #4A2E1B), linear-gradient(45deg, #4A2E1B 25%, transparent 25%, transparent 75%, #4A2E1B 75%, #4A2E1B);
+          background-size: 32px 32px;
+          background-position: 0 0, 16px 16px;
+          animation: fp-bg-scroll 3s linear infinite;
+        }
 
         .fp-star { animation: fp-pop 0.4s ease-out both; }
         .fp-pop { animation: fp-pop 0.35s ease-out; }
@@ -270,9 +301,16 @@ export default function Amigos() {
       `}</style>
 
       <header style={S.header}>
-        <Link href="/" style={S.backBtn} aria-label="Volver al inicio">
-          <span style={{ fontSize: 18 }}>←</span>
-        </Link>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <Link href="/" style={S.backBtn} aria-label="Volver al inicio">
+            <span style={{ fontSize: 18 }}>←</span>
+          </Link>
+          {currentLevel > 1 && phase !== "setup" && phase !== "level_select" && phase !== "reward" && (
+            <button onClick={() => setPhase("level_select")} className="fp-btn-pop" style={S.headerBtn} title="Elegir Nivel">
+              🗺️
+            </button>
+          )}
+        </div>
         <span style={{ ...S.title, color: phase === "reward" ? "var(--teal)" : ACCENT }}>
           {phase === "reward" ? "🌟 FocusPlay" : "🤝 Amigos"}
         </span>
@@ -281,8 +319,10 @@ export default function Amigos() {
           <span style={S.gemsNum}>{gems}</span>
         </div>
         {(phase !== "setup") && (
-          <div style={S.userAvatarContainer}>
-            <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={36} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
+          <div style={S.userAvatarContainer} onClick={handleEditAvatar} title="Editar personaje">
+            <div className={profile.avatar.equippedBackground === "minecraft_bg" ? "fp-bg-minecraft" : ""} style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", backgroundColor: profile.avatar.equippedBackground === "minecraft_bg" ? "transparent" : profile.avatar.color }}>
+              <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor="transparent" hairColor={profile.avatar.hairColor} size={36} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
+            </div>
           </div>
         )}
       </header>
@@ -295,7 +335,9 @@ export default function Amigos() {
           <p style={S.setupSub}>Así te verás en el juego hoy</p>
           
           <div style={S.previewBox}>
-            <CustomAvatar base={setupBase} skinTone={setupTone} bgColor={setupColor} hairColor={setupHair} size={140} expression="happy" equippedHat={setupHat} equippedGlasses={setupGlasses} />
+            <div className={setupBackground === "minecraft_bg" ? "fp-bg-minecraft" : ""} style={{ width: 140, height: 140, borderRadius: "50%", overflow: "hidden", backgroundColor: setupBackground === "minecraft_bg" ? "transparent" : setupColor }}>
+              <CustomAvatar base={setupBase} skinTone={setupTone} bgColor="transparent" hairColor={setupHair} size={140} expression="happy" equippedHat={setupHat} equippedGlasses={setupGlasses} />
+            </div>
           </div>
 
           <div style={S.setupControls}>
@@ -333,8 +375,22 @@ export default function Amigos() {
               </div>
             </div>
 
+          {unlockedBackgrounds.length > 0 && (
             <div style={S.setupSection}>
-              <p style={S.setupLabel}>💇 COLOR DE CABELLO</p>
+              <p style={S.setupLabel}>🖼️ FONDO</p>
+              <div style={S.setupRow}>
+                <button onClick={() => setSetupBackground(null)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupBackground === null ? S.setupBtnActive : {}) }}>Normal</button>
+                {unlockedBackgrounds.map(acc => (
+                  <button key={acc.id} onClick={() => setSetupBackground(acc.payload)} className="fp-btn-pop" style={{ ...S.setupBtn, ...(setupBackground === acc.payload ? S.setupBtnActive : {}) }}>
+                    {acc.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+            <div style={S.setupSection}>
+              <p style={S.setupLabel}> COLOR DE CABELLO</p>
               <div style={S.setupRow}>
                 {hairColors.map(c => (
                   <div key={c} onClick={() => setSetupHair(c)} className="fp-btn-pop" style={{ ...S.colorBtn, backgroundColor: c, borderColor: setupHair === c ? "white" : "transparent" }} />
@@ -380,7 +436,42 @@ export default function Amigos() {
             </div>
           </div>
 
-          <button onClick={startPlay} className="fp-btn-pop" style={S.startBtn}>🚀 ¡Empezar a jugar!</button>
+          <button onClick={startPlay} className="fp-btn-pop" style={S.startBtn}>✅ Guardar y continuar</button>
+        </div>
+      )}
+
+      {phase === "level_select" && (
+        <div style={S.setupBody} className="anim-fadein">
+          <span className="fp-bounce" style={{ fontSize: 48 }}>🗺️</span>
+          <h2 style={S.setupTitle}>Elige un Nivel</h2>
+          <p style={S.setupSub}>Repite niveles que ya completaste o continúa tu aventura</p>
+
+          <div style={S.levelsGrid}>
+            {Array.from({ length: maxLevel }).map((_, i) => {
+              const lvl = i + 1;
+              const isUnlocked = lvl <= currentLevel;
+              const isCurrent = lvl === currentLevel;
+              return (
+                <button
+                  key={lvl}
+                  disabled={!isUnlocked}
+                  onClick={() => {
+                    setChosenLevel(lvl);
+                    restart();
+                  }}
+                  className={isUnlocked ? "fp-btn-pop" : ""}
+                  style={{
+                    ...S.levelCard,
+                    ...(isUnlocked ? S.levelUnlocked : S.levelLocked),
+                    ...(isCurrent ? S.levelCurrent : {})
+                  }}
+                >
+                  <span>Nivel {lvl}</span>
+                  {!isUnlocked ? <span style={{fontSize: 20}}>🔒</span> : <span style={{fontSize: 20}}>⭐</span>}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -410,7 +501,9 @@ export default function Amigos() {
             <div key={scenarioIndex} className="fp-flip" style={S.stageArea}>
               <div style={S.scene}>
                 <div style={S.sceneActor}>
-                  <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={60} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
+                  <div className={profile.avatar.equippedBackground === "minecraft_bg" ? "fp-bg-minecraft" : ""} style={{ width: 60, height: 60, borderRadius: "50%", overflow: "hidden", backgroundColor: profile.avatar.equippedBackground === "minecraft_bg" ? "transparent" : profile.avatar.color }}>
+                    <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor="transparent" hairColor={profile.avatar.hairColor} size={60} expression={avatarExpression} equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} />
+                  </div>
                   <span style={S.actorName}>Tú</span>
                 </div>
                 
@@ -492,7 +585,9 @@ export default function Amigos() {
                   }}>
                     <div style={{ flexShrink: 0 }}>
                       {selected.isCorrect 
-                        ? <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor={profile.avatar.color} hairColor={profile.avatar.hairColor} size={44} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} /> 
+                        ? <div className={profile.avatar.equippedBackground === "minecraft_bg" ? "fp-bg-minecraft" : ""} style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", backgroundColor: profile.avatar.equippedBackground === "minecraft_bg" ? "transparent" : profile.avatar.color }}>
+                            <CustomAvatar base={profile.avatar.base} skinTone={profile.avatar.skinTone} bgColor="transparent" hairColor={profile.avatar.hairColor} size={44} expression="happy" equippedHat={profile.avatar.equippedHat} equippedGlasses={profile.avatar.equippedGlasses} /> 
+                          </div>
                         : <span className="fp-wiggle" style={{ fontSize: 36, display: "inline-block" }}>🤔</span>}
                     </div>
                     <div>
@@ -548,7 +643,10 @@ export default function Amigos() {
               : "Sigue practicando, cada intento te hace más fuerte. 🤗"}
           </p>
           <div style={S.rewardBtns}>
-            <button onClick={restart} className="fp-btn-pop" style={S.btnSecondary}>🔄 jugar otra vez</button>
+            <button onClick={restart} className="fp-btn-pop" style={S.btnSecondary}>🔄 repetir nivel</button>
+            {currentLevel > 1 && (
+              <button onClick={() => setPhase("level_select")} className="fp-btn-pop" style={S.btnSecondary}>🗺️ elegir nivel</button>
+            )}
             <Link href="/" className="fp-btn-pop" style={S.btnPrimary}>ir al inicio</Link>
             <Link href="/reporte" className="fp-btn-pop" style={{ ...S.btnSecondary, background: "rgba(78,205,196,0.15)", color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>📋 ver reporte de IA</Link>
           </div>
@@ -563,10 +661,11 @@ const S: Record<string, React.CSSProperties> = {
   header:        { padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg2)" },
   tealLine:      { height: 2, background: "var(--teal)" },
   backBtn:       { width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--white)", textDecoration: "none" },
+  headerBtn:     { width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", fontSize: 18 },
   title:         { fontSize: 18, fontWeight: 700 },
   gemsPill:      { display: "flex", alignItems: "center", gap: 6, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 20, padding: "5px 12px" },
   gemsNum:       { fontSize: 15, fontWeight: 700, color: "var(--teal)" },
-  userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: `2px solid ${ACCENT}55`, overflow: "hidden" },
+  userAvatarContainer: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 12, border: `2px solid ${ACCENT}55`, overflow: "hidden", cursor: "pointer" },
   bodyLarge:     { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 22px", gap: 16, maxWidth: 1100, margin: "0 auto", width: "100%" },
   progressDots:  { display: "flex", gap: 8 },
   dot:           { width: 12, height: 12, borderRadius: "50%" },
@@ -613,6 +712,12 @@ const S: Record<string, React.CSSProperties> = {
   colorBtn:      { width: 38, height: 38, borderRadius: "50%", cursor: "pointer", borderWidth: 3, borderStyle: "solid", borderColor: "transparent", transition: "border-color 0.2s" },
   startBtn:      { background: ACCENT, borderRadius: 18, padding: "16px 0", fontSize: 17, fontWeight: 800, color: "#1C2B3A", width: "100%", cursor: "pointer", border: "none", marginTop: 6 },
   // Reward
+  levelsGrid:    { display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 360, marginTop: 16 },
+  levelCard:     { padding: "18px 24px", borderRadius: 20, border: "2px solid", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", fontSize: 18, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" },
+  levelUnlocked: { backgroundColor: "rgba(82,201,126,0.1)", borderColor: "var(--green)", color: "var(--green)" },
+  levelLocked:   { backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.3)", cursor: "not-allowed" },
+  levelCurrent:  { backgroundColor: `${ACCENT}1A`, borderColor: ACCENT, color: ACCENT },
+  
   rewardBody:    { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "32px 24px", textAlign: "center" },
   confettiRow:   { display: "flex", gap: 8, justifyContent: "center" },
   rewardTitle:   { fontSize: 34, fontWeight: 800, color: "var(--gold)" },
