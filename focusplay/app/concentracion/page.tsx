@@ -14,7 +14,7 @@ type Tab    = "memorama" | "emociones" | "respiracion" | "simon"
 type Phase  = "playing" | "reward" | "gameover" | "breathbreak"
 type Card   = { cardId: string; pairId: string; emoji: string; label: string }
 
-// ─── Memorama data por nivel ──────────────────────────────────────────────────
+// --- Memorama data por nivel ---
 const MEMO_PAIRS: Record<1|2|3, { emoji: string; label: string }[]> = {
   1: [
     { emoji: "🐶", label: "perro" },
@@ -56,7 +56,7 @@ function buildMemoCards(level: 1|2|3): Card[] {
   return cards.sort(() => Math.random() - 0.5)
 }
 
-// ─── Root page ────────────────────────────────────────────────────────────────
+// --- Root page ---
 export default function Concentracion() {
   const router  = useRouter()
   const nameRef = useRef<string>("")
@@ -153,7 +153,6 @@ export default function Concentracion() {
       </header>
       <div style={S.tealLine} />
 
-      {/* ── Tab selector estilo "tarjetas" como la home ── */}
       <nav style={S.tabBar}>
         {TABS.map(t => {
           const isActive = tab === t.id
@@ -194,7 +193,7 @@ interface GameProps {
   onSwitchTab?: (tab: Tab) => void
 }
 
-// ─── GAME 1 — MEMORAMA ───────────────────────────────────────────────────────
+// --- GAME 1 - MEMORAMA ---
 function GameMemorama({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   const p         = getProfile() as any
   const diffLevel = Math.min(3, Math.max(1, p.concentracionLevel ?? 1)) as 1|2|3
@@ -366,7 +365,7 @@ function GameMemorama({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   )
 }
 
-// ─── GAME 2 — EMOCIONES ──────────────────────────────────────────────────────
+// --- GAME 2 - EMOCIONES ---
 function GameEmociones({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   const p        = getProfile() as any
   const diffLevel = Math.min(3, Math.max(1, (p.emocionesLevel ?? 1))) as 1|2|3
@@ -501,7 +500,7 @@ function GameEmociones({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   )
 }
 
-// ─── GAME 3 — RESPIRACIÓN ────────────────────────────────────────────────────
+// --- GAME 3 - RESPIRACIÓN ---
 function GameRespiracion({ nameRef, onGemsChange }: GameProps) {
   const pr        = getProfile() as any
   const diffLevel = Math.min(3, Math.max(1, (pr.respiracionLevel ?? 1))) as 1|2|3
@@ -616,7 +615,12 @@ function GameRespiracion({ nameRef, onGemsChange }: GameProps) {
   )
 }
 
-// ─── GAME 4 — SIMÓN ──────────────────────────────────────────────────────────
+// --- GAME 4 - SIMÓN ---
+// Modo "resistencia": el juego no tiene un tope fijo de colores. La secuencia
+// sigue creciendo de uno en uno despues de cada ronda correcta, y el juego
+// SOLO termina (pasando a la pantalla de reward) cuando el jugador se
+// equivoca. El numero de colores alcanzados al momento del error es el
+// puntaje final de esa partida.
 function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   const pr        = getProfile() as any
   const diffLevel = Math.min(3, Math.max(1, (pr.simonLevel ?? 1))) as 1|2|3
@@ -686,42 +690,48 @@ function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
     await flashColor(color.id, color.sound, 200)
 
     if (color.id !== correct) {
+      // --- Unico punto de derrota: el jugador se equivoco ---
+      // Aqui es donde ahora termina la partida (antes tambien terminaba al
+      // llegar a levelSet.maxLength). El puntaje final es sequence.length,
+      // es decir, cuantos colores logro recordar antes de fallar.
       recordActivity(2000, true)
-      const res = recordSimonResult(nameRef.current, false, 0)
+
+      const finalLength = sequence.length
+      const earned = Math.min(5, Math.max(1, 1 + Math.floor(finalLength / 2)))
+      setStars(earned)
+      const res = recordSimonResult(nameRef.current, finalLength > 0, earned)
       onGemsChange(res.profile.gems)
+      setLeveledUp(res.leveledUp)
 
       const nextLostGames = lostGames + 1
       setLostGames(nextLostGames)
 
+      // El "breathbreak" sigue existiendo como pausa de regulacion tras
+      // varias partidas perdidas seguidas, pero ya no compite con la
+      // condicion de victoria - ahora ambos casos salen del mismo lugar
+      // (un error), asi que solo decidimos si mostramos primero el respiro.
       if (nextLostGames >= 3) {
         setSimonPhase("breathbreak")
       } else {
-        setSimonPhase("gameover")
+        setSimonPhase("reward")
       }
       return
     }
 
     if (newInput.length === sequence.length) {
+      // Ronda completada correctamente: siempre se sigue alargando la
+      // secuencia, sin tope. El juego solo se detiene con un error.
       recordActivity(1500, false)
-      if (sequence.length >= levelSet.maxLength) {
-        const earned = Math.min(5, 3 + Math.floor(sequence.length / 2))
-        setStars(earned)
-        const res = recordSimonResult(nameRef.current, true, earned)
-        onGemsChange(res.profile.gems); setLeveledUp(res.leveledUp); setSimonPhase("reward")
-        setLostGames(0)
-      } else {
-        await new Promise(r => setTimeout(r, 500))
-        const nextSeq = [...sequence, SIMON_COLORS[Math.floor(Math.random() * 4)].id]
-        setSequence(nextSeq); showSequence(nextSeq)
-      }
+      setLostGames(0)
+      await new Promise(r => setTimeout(r, 500))
+      const nextSeq = [...sequence, SIMON_COLORS[Math.floor(Math.random() * 4)].id]
+      setSequence(nextSeq); showSequence(nextSeq)
     }
   }
 
   if (simonPhase === "reward") return <RewardScreen stars={stars} leveledUp={leveledUp}
     levelNum={(getProfile() as any).simonLevel ?? 1}
-    subtitle={`¡completaste ${sequence.length} colores seguidos!`} onRestart={init} />
-
-  if (simonPhase === "gameover") return <GameoverScreen onRestart={init} />
+    subtitle={`¡llegaste a ${sequence.length} colores seguidos!`} onRestart={init} />
 
   if (simonPhase === "intro") return (
     <div style={S.body}>
@@ -729,9 +739,9 @@ function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
       <div style={S.centeredSection}>
         <span className="fp-bounce" style={{ fontSize: 60 }}>🔴🟢🔵🟡</span>
         <h2 style={S.introTitle}>Simón Dice</h2>
-        <p style={S.introSub}>Memoriza y repite la secuencia de colores</p>
+        <p style={S.introSub}>Memoriza y repite la secuencia de colores. ¡Llega lo más lejos que puedas!</p>
         <p style={{ ...S.introMeta, color: "#FAC775", background: "rgba(250,199,117,0.12)" }}>
-          Objetivo: {levelSet.maxLength} colores · Nivel {diffLevel}
+          Nivel {diffLevel} · sin límite de colores
         </p>
         <button onClick={startGame} className="fp-btn-pop" style={{ ...S.bigBtn, background: "#FAC775" }}>¡Jugar!</button>
       </div>
@@ -745,7 +755,7 @@ function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
         Vamos a respirar un momento
       </h2>
       <p style={{ ...S.rewardSub, maxWidth: 320 }}>
-        Perdiste 3 partidas completas. ¡No pasa nada! Vamos a relajarnos un poco y regresar con calma.
+        Llevas varios intentos seguidos. ¡No pasa nada! Vamos a relajarnos un poco y regresar con calma.
       </p>
       <div style={S.rewardBtns}>
         <button onClick={() => onSwitchTab?.("respiracion")} className="fp-btn-pop" style={S.btnPrimary}>
@@ -766,11 +776,6 @@ function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
           {simonPhase === "showing" ? "👀 Observa…" : `✋ Tu turno (${input.length}/${sequence.length})`}
         </span>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{ fontSize: 16 }}>{i < (3 - lostGames) ? "❤️" : "🤍"}</span>
-            ))}
-          </div>
           <div style={S.timerPill}>
             <span style={{ fontWeight: 700, color: "var(--gold)" }}>🎶 {sequence.length}</span>
           </div>
@@ -816,7 +821,7 @@ function GameSimon({ nameRef, onGemsChange, onSwitchTab }: GameProps) {
   )
 }
 
-// ─── Shared UI ────────────────────────────────────────────────────────────────
+// --- Shared UI ---
 function AIBar({ reason, level, accent }: { reason: string; level: number; accent: string }) {
   return (
     <div style={{ ...S.aiBar, borderColor: `${accent}33`, background: `${accent}0D` }}>
@@ -887,7 +892,7 @@ function GameoverScreen({ onRestart }: { onRestart: () => void }) {
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// --- Styles ---
 const S: Record<string, React.CSSProperties> = {
   main:             { minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" },
   header:           { padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg2)" },
@@ -897,7 +902,6 @@ const S: Record<string, React.CSSProperties> = {
   gemsPill:         { display: "flex", alignItems: "center", gap: 6, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.3)", borderRadius: 20, padding: "5px 12px" },
   gemsNum:          { fontSize: 15, fontWeight: 700, color: "var(--teal)" },
 
-  // ── Tab bar estilo tarjetas ──
   tabBar:           { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, background: "var(--bg2)", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" },
   tabCard:          { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, border: "2px solid", cursor: "pointer", textAlign: "left" },
   tabIconCircle:    { width: 44, height: 44, minWidth: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" },
